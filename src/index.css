@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Pulsavimo efektas dabartinei vietos žymei */
+.pulse-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  border: 3px solid white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.7), 0 0 10px rgba(0,0,0,0.5);
+  position: relative;
+  animation: pulse 2s infinite;
+  z-index: 1000 !important;
+}
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+    }
+    70% {
+      box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+  
+  /* Paslėpti Leaflet atributą mobilioje versijoje */
+  @media (max-width: 768px) {
+    .leaflet-container .leaflet-control-attribution {
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  /* Fiksuoto dydžio aukštis mobiliuose įrenginiuose */
+@media (max-width: 768px) {
+  body, html, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: fixed;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Pašalinti bet kokį potencialų scroll'inimą iš žemėlapio konteinerio */
+  .leaflet-container {
+    width: 100vw !important;
+    height: calc(100vh - 110px) !important; /* 110px apytiksliai viršutinės ir apatinės juostos aukštis */
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+}
