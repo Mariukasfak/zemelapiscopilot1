@@ -70,6 +70,25 @@ const getCategoryIconSvg = (category: string) => {
   }
 };
 
+// Grąžina kategorijai tinkamą emoji ikoną
+const getCategoryEmoji = (category: string): string => {
+  switch(category) {
+    case 'fishing': return '🎣';
+    case 'swimming': return '🏊';
+    case 'camping': return '⛺';
+    case 'rental': return '🏠';
+    case 'paid': return '💰';
+    case 'private': return '🔒';
+    case 'bonfire': return '🔥';
+    case 'playground': return '🎮';
+    case 'picnic': return '🍽️';
+    case 'campsite': return '🏕️';
+    case 'extreme': return '🏂';
+    case 'ad': return '📢';
+    default: return '📍';
+  }
+};
+
 // Map center coordinates (Lithuania)
 const CENTER_POSITION: [number, number] = [54.8985, 23.9036];
 const DEFAULT_ZOOM = 7;
@@ -384,7 +403,6 @@ const Map: React.FC = () => {
     x: number,
     y: number
   } | null>(null);
-  const [user, setUser] = useState<any>(null);
   const [showPopup, setShowPopup] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -538,7 +556,7 @@ const Map: React.FC = () => {
     const getUser = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        setUser(data.session?.user || null);
+        const user = data.session?.user || null;
         
         // If user has geolocation, center the map on their location
         if (navigator.geolocation && mapRef.current) {
@@ -1013,7 +1031,6 @@ const Map: React.FC = () => {
         case 'rental': IconComponent = Home; break;
         case 'paid': IconComponent = DollarSign; break;
         case 'private': IconComponent = Lock; break;
-        case 'public': IconComponent = Unlock; break;
         case 'bonfire': IconComponent = Flame; break;
         case 'playground': IconComponent = Toy; break;
         case 'picnic': IconComponent = Utensils; break;
@@ -1096,58 +1113,83 @@ const Map: React.FC = () => {
         console.log("Marker clicked:", location.name);
         setShowPopup(location.id);
         
-        // Atkuriam originalų popup turinį
+        // Sukuriame popup turinį
         const popupContent = `
-          <div class="p-1">
-            <h3 class="font-medium text-base">
-              ${location.name}
-              ${location.categories && location.categories.includes('ad') ? 
-                `<span class="ml-1 text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded-full">
-                  Reklama
-                </span>` : ''}
-            </h3>
-            
-            <div class="flex flex-wrap gap-1 mt-1 category-icons" id="category-icons-${location.id}">
-              ${getCategoryIconsHtml(location)}
-            </div>
-            
-            ${location.images && location.images.length > 0 ? 
-              `<div class="mt-2">
-                <img 
-                  src="${location.images[location.main_image_index || 0]}" 
-                  alt="${location.name}"
-                  class="w-full h-24 object-cover rounded"
-                />
-              </div>` : ''}
-            
-            ${location.rating !== undefined ? 
-              `<div class="flex items-center text-yellow-500 text-sm mt-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                ${Number(location.rating).toFixed(1)}
-              </div>` : 
-              `<div class="flex items-center text-gray-400 text-xs mt-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                Nėra įvertinimų
-              </div>`}
-            
-            ${location.weather_data ? 
-              `<div class="flex items-center text-sm mt-1 text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>
-                ${location.weather_data.temp}°C
-              </div>` : ''}
-            
-            <div class="flex space-x-2 mt-2">
-              <button
-                onclick="document.dispatchEvent(new CustomEvent('openLocationDetails', {detail: {id: '${location.id}'}}));"
-                class="bg-blue-500 text-white text-xs py-1 px-2 rounded hover:bg-blue-600"
-              >
-                Daugiau informacijos
-              </button>
-            </div>
+<div class="p-0 leaflet-popup-modern">
+  <div class="relative h-48 bg-gray-100">
+    ${location.images && location.images.length > 0 ? `
+      <img 
+        src="${location.images[location.main_image_index || 0]}" 
+        alt="${location.name}"
+        class="w-full h-full object-cover"
+      />
+      ${location.is_paid ? `
+        <div class="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+          Mokama
+        </div>
+      ` : ''}
+      ${location.categories && location.categories.includes('ad') ? `
+        <div class="absolute top-2 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-md font-medium animate-pulse">
+          Reklama
+        </div>
+      ` : ''}
+    ` : `
+      <div class="w-full h-full flex items-center justify-center text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+    `}
+  </div>
+  
+  <div class="p-3">
+    <div class="flex justify-between items-start mb-2">
+      <h3 class="font-medium text-lg leading-tight">${location.name}</h3>
+      ${location.rating !== undefined ? `
+        <div class="flex items-center text-amber-500 font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          ${Number(location.rating).toFixed(1)}
+        </div>
+      ` : ''}
+    </div>
+    
+    <div class="flex flex-wrap gap-1 mb-2">
+      ${(location.categories || []).map(category => `
+        <span class="inline-flex items-center text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">
+          ${getCategoryEmoji(category)} ${category}
+        </span>
+      `).join('')}
+    </div>
+    
+    ${location.weather_data ? `
+      <div class="bg-blue-50 rounded-md p-2 mb-2 flex justify-between">
+        <div class="text-center">
+          <div class="text-xl font-semibold text-blue-700">${location.weather_data.temp}°C</div>
+          <div class="text-xs text-blue-600">${location.weather_data.description}</div>
+        </div>
+        <div class="flex flex-col text-xs text-blue-700">
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.94"/></svg>
+            ${location.weather_data.humidity}%
           </div>
-        `;
-        
-        // Sukurti popup su originaliu stiliumi
+          <div class="flex items-center mt-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
+            ${location.weather_data.windSpeed} m/s
+          </div>
+        </div>
+      </div>
+    ` : ''}
+    
+    <button
+      onclick="document.dispatchEvent(new CustomEvent('openLocationDetails', {detail: {id: '${location.id}'}}));"
+      class="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded-md transition-colors flex items-center justify-center"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Daugiau informacijos
+    </button>
+  </div>
+</div>
+`;
+
+        // Sukurti popup
         const popup = L.popup({
           offset: [0, -5],
           closeButton: true,
@@ -1213,10 +1255,12 @@ const Map: React.FC = () => {
   useEffect(() => {
     // Įvykio klausytojas popupams atidaryti
     const handleOpenLocationDetails = (e: any) => {
-      const locationId = e.detail.id;
-      const location = locations.find(loc => loc.id === locationId);
+      console.log("Opening location details for ID:", e.detail.id);
+      const location = locations.find(loc => loc.id === e.detail.id);
       if (location) {
         handleLocationClick(location);
+      } else {
+        console.error("Location not found with ID:", e.detail.id);
       }
     };
     
