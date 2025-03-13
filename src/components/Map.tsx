@@ -1104,23 +1104,17 @@ const Map: React.FC = () => {
     
     // Pridėti žymeklius į klasterį
     filteredLocations.forEach(location => {
+      // Skip if location doesn't have coordinates
+      if (!location.latitude || !location.longitude) return;
+      
       const marker = L.marker([location.latitude, location.longitude], {
         icon: getLocationIcon(location),
-        interactive: true,  // Užtikrina, kad žymeklis tikrai reaguotų į paspaudimus
-        bubblingMouseEvents: false  // Sustabdo mouse įvykių burbulėjimą
+        interactive: true,
+        bubblingMouseEvents: false
       });
       
-      // Pridėti įvykių klausytojus
-      marker.on('click', (e) => {
-        // Apsaugome, kad įvykis nesitęstų į kitus elementus
-        L.DomEvent.stopPropagation(e);
-        L.DomEvent.preventDefault(e.originalEvent);
-        
-        console.log("Marker clicked:", location.name);
-        setShowPopup(location.id);
-        
-        // Sukuriame popup turinį
-        const popupContent = `
+      // Create popup content with correct rating display
+      const popupContent = `
 <div class="p-0 leaflet-popup-modern">
   <div class="relative h-48 bg-gray-100">
     ${location.images && location.images.length > 0 ? `
@@ -1149,10 +1143,10 @@ const Map: React.FC = () => {
   <div class="p-3">
     <div class="flex justify-between items-start mb-2">
       <h3 class="font-medium text-lg leading-tight">${location.name}</h3>
-      ${location.rating !== undefined ? `
+      ${typeof location.rating === 'number' && location.rating > 0 ? `
         <div class="flex items-center text-amber-500 font-medium">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          ${Number(location.rating).toFixed(1)}
+          ${location.rating.toFixed(1)}
         </div>
       ` : `
         <div class="flex items-center text-gray-400 text-sm">
@@ -1200,32 +1194,45 @@ const Map: React.FC = () => {
 </div>
 `;
 
-        // Sukurti popup
-        const popup = L.popup({
-          offset: [0, -5],
-          closeButton: true,
-          className: 'location-popup-original',
-          minWidth: 200,
-          maxWidth: 280,
-          autoClose: false
-        }).setContent(popupContent);
+      // Create popup with prepared content
+      const popup = L.popup({
+        offset: [0, -5],
+        closeButton: true,
+        className: 'enhanced-popup',
+        minWidth: 200,
+        maxWidth: 280,
+        autoClose: false
+      }).setContent(popupContent);
+      
+      // Bind popup to marker
+      marker.bindPopup(popup);
+      
+      // Add click handler
+      marker.on('click', (e) => {
+        // Prevent event propagation
+        L.DomEvent.stopPropagation(e);
+        L.DomEvent.preventDefault(e.originalEvent);
         
-        marker.bindPopup(popup).openPopup();
+        console.log("Marker clicked:", location.name);
+        setShowPopup(location.id);
+        
+        // Simply open the popup that's already bound
+        marker.openPopup();
       });
       
-      // Pridėti kontekstinio meniu įvykį
+      // Add context menu event
       marker.on('contextmenu', (e: any) => {
         handleLocationContextMenu(location, e.originalEvent);
       });
       
-      // Pridėti žymeklį į klasterį
+      // Add marker to cluster
       markers.addLayer(marker);
     });
     
-    // Pridėti klasterį į žemėlapį
+    // Add cluster to map
     map.addLayer(markers);
     
-    // Išvalyti, kai komponentas išmontuojamas
+    // Cleanup when component unmounts
     return () => {
       map.removeLayer(markers);
     };
@@ -1520,12 +1527,21 @@ async function updateLocationsWithRatings(locations: Location[]): Promise<Locati
       });
     }
     
+    // Log ratings for debugging
+    console.log('Fetched ratings for locations:', 
+      Object.keys(locationRatings).length, 'locations have ratings');
+    
     // Update locations with calculated average ratings
-    return locations.map(location => {
+    const updatedLocations = locations.map(location => {
       const ratingsForLocation = locationRatings[location.id] || [];
-      const avgRating = ratingsForLocation.length > 0 
-        ? Number((ratingsForLocation.reduce((sum, r) => sum + r, 0) / ratingsForLocation.length).toFixed(1))
-        : undefined;
+      let avgRating = undefined;
+      
+      if (ratingsForLocation.length > 0) {
+        // Calculate average and ensure it's a number
+        const sum = ratingsForLocation.reduce((acc, r) => acc + r, 0);
+        avgRating = Number((sum / ratingsForLocation.length).toFixed(1));
+        console.log(`Location ${location.name} (${location.id}) has rating: ${avgRating}`);
+      }
       
       return {
         ...location,
@@ -1533,6 +1549,8 @@ async function updateLocationsWithRatings(locations: Location[]): Promise<Locati
         ratings_count: ratingsForLocation.length
       };
     });
+    
+    return updatedLocations;
   } catch (error) {
     console.error('Error updating locations with ratings:', error);
     return locations;
