@@ -925,13 +925,9 @@ const Map: React.FC = () => {
   // Optimized with useCallback
   const handleLocationClick = useCallback((location: Location) => {
     console.log("Location clicked:", location.name);
-    // Atlaisvinkime bet kokius atidarytus popup
-    setShowPopup(null);
-    // Tada nustatykime pasirinktą vietą ir atidarykime detalių modalą
-    setTimeout(() => {
-      setSelectedLocation(location);
-      setShowLocationDetails(true);
-    }, 10);
+    // Immediately show location details without delay
+    setSelectedLocation(location);
+    setShowLocationDetails(true);
   }, []);
 
   // Optimized with useCallback
@@ -1099,21 +1095,69 @@ const Map: React.FC = () => {
       marker.on('click', () => {
         console.log("Marker clicked:", location.name);
         setShowPopup(location.id);
-        // Sukurti popupą
+        
+        // Atkuriam originalų popup turinį
         const popupContent = `
           <div class="p-1">
-            <h3 class="font-medium text-base">${location.name}</h3>
+            <h3 class="font-medium text-base">
+              ${location.name}
+              ${location.categories && location.categories.includes('ad') ? 
+                `<span class="ml-1 text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded-full">
+                  Reklama
+                </span>` : ''}
+            </h3>
+            
+            <div class="flex flex-wrap gap-1 mt-1 category-icons" id="category-icons-${location.id}">
+              ${getCategoryIconsHtml(location)}
+            </div>
+            
+            ${location.images && location.images.length > 0 ? 
+              `<div class="mt-2">
+                <img 
+                  src="${location.images[location.main_image_index || 0]}" 
+                  alt="${location.name}"
+                  class="w-full h-24 object-cover rounded"
+                />
+              </div>` : ''}
+            
+            ${location.rating !== undefined ? 
+              `<div class="flex items-center text-yellow-500 text-sm mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                ${Number(location.rating).toFixed(1)}
+              </div>` : 
+              `<div class="flex items-center text-gray-400 text-xs mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Nėra įvertinimų
+              </div>`}
+            
+            ${location.weather_data ? 
+              `<div class="flex items-center text-sm mt-1 text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>
+                ${location.weather_data.temp}°C
+              </div>` : ''}
+            
             <div class="flex space-x-2 mt-2">
               <button
-                class="bg-blue-500 text-white text-xs py-1 px-2 rounded hover:bg-blue-600"
                 onclick="document.dispatchEvent(new CustomEvent('openLocationDetails', {detail: {id: '${location.id}'}}));"
+                class="bg-blue-500 text-white text-xs py-1 px-2 rounded hover:bg-blue-600"
               >
                 Daugiau informacijos
               </button>
             </div>
           </div>
         `;
-        marker.bindPopup(popupContent).openPopup();
+        
+        // Sukurti popup su originaliu stiliumi
+        const popup = L.popup({
+          offset: [0, -5],
+          closeButton: true,
+          className: 'location-popup-original',
+          minWidth: 200,
+          maxWidth: 280,
+          autoClose: false
+        }).setContent(popupContent);
+        
+        marker.bindPopup(popup).openPopup();
       });
       
       // Pridėti kontekstinio meniu įvykį
@@ -1132,7 +1176,38 @@ const Map: React.FC = () => {
     return () => {
       map.removeLayer(markers);
     };
-  }, [filteredLocations, mapRef.current, mapReady, getLocationIcon, handleLocationContextMenu]);
+  }, [filteredLocations, mapRef.current, mapReady, getLocationIcon, handleLocationContextMenu, layers]);
+
+  // Funkcija, kuri grąžina HTML kodo string su kategorijų ikonoms
+  const getCategoryIconsHtml = (location: Location): string => {
+    // Saugiklis: jei categories yra undefined arba null, grąžiname tuščią string
+    if (!location.categories) {
+      return '';
+    }
+    
+    return location.categories.map(category => {
+      // Ieškome layer, jei nerandame - saugiai grįžtame, kad išvengtume klaidų
+      const layer = layers.find(l => l.category === category);
+      if (!layer) return '';
+      
+      const color = layer.color;
+      let iconSvg = '';
+      
+      switch (category) {
+        case 'fishing':
+          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.5a9 9 0 1 0-9 9 9 9 0 0 0 9-9Z"/><path d="M13 16.5a4 4 0 1 0-4 4 4 4 0 0 0 4-4Z"/><path d="M3 9.5V4.25C3 3.56 3.56 3 4.25 3h4.5C9.44 3 10 3.56 10 4.25V8"/><path d="m7 15 3-3"/><path d="M19.5 8.5c.5-1 .5-2 .5-3 0-2.5-2-3-3-3s-2.5.5-3 3c0 1 0 2 .5 3"/><path d="M17 5.5v3"/></svg>';
+          break;
+        case 'swimming':
+          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M2 16h20"/><path d="M2 20h20"/><path d="M4 8h10"/><path d="M14 4h2"/><path d="M14 8c0-2.5 2-4 4-4"/></svg>';
+          break;
+        // ... other cases
+        default:
+          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+      }
+      
+      return `<span class="text-${color}-500 ${category === 'ad' ? 'text-purple-500' : ''}">${iconSvg}</span>`;
+    }).join('');
+  };
 
   // Add event listener for marker interactions
   useEffect(() => {
