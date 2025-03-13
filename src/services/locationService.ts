@@ -228,6 +228,61 @@ export const rateLocation = async (locationId: string, userId: string, rating: n
   }
 };
 
+// Fetch locations by map bounds
+export const fetchLocationsByBounds = async (
+  bounds: { north: number; south: number; east: number; west: number },
+  userRole: UserRole
+): Promise<Location[]> => {
+  try {
+    console.log('Fetching locations by bounds:', bounds);
+    
+    // Sukurkite Supabase užklausą su geografiniais filtrais
+    let query = supabase.from('locations')
+      .select(`
+        id,
+        name,
+        description,
+        latitude,
+        longitude,
+        categories,
+        is_public,
+        is_paid,
+        images,
+        main_image_index,
+        created_at,
+        updated_at,
+        created_by,
+        rating,
+        is_approved,
+        weather_data
+      `)
+      .gte('latitude', bounds.south)  // Platuma didesnė arba lygi pietinei ribai
+      .lte('latitude', bounds.north)  // Platuma mažesnė arba lygi šiaurinei ribai
+      .gte('longitude', bounds.west)  // Ilguma didesnė arba lygi vakarinei ribai
+      .lte('longitude', bounds.east); // Ilguma mažesnė arba lygi rytinei ribai
+    
+    // Jei ne admin arba moderator, rodyti tik patvirtintas vietas
+    if (userRole !== 'admin' && userRole !== 'moderator') {
+      query = query.eq('is_approved', true);
+    }
+    
+    // Nustatyti limitą, kad užklausa būtų efektyvesnė
+    query = query.limit(200);
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching locations by bounds:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchLocationsByBounds:', error);
+    return [];
+  }
+};
+
 // Generate mock locations for fallback
 export const generateMockLocations = (): Location[] => {
   return [

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { DivIcon } from 'leaflet';
 
-const LocationMarker: React.FC = () => {
+// Optimized with React.memo to prevent unnecessary re-renders
+const LocationMarker: React.FC = React.memo(() => {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [accuracy, setAccuracy] = useState<number>(0);
   const [filterRadius, setFilterRadius] = useState<number>(0);
@@ -86,6 +87,6 @@ const LocationMarker: React.FC = () => {
       )}
     </>
   );
-};
+});
 
 export default LocationMarker;

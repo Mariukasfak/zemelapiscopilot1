@@ -1,7 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Circle } from 'react-leaflet';
 import { Icon, LeafletMouseEvent, DivIcon } from 'leaflet';
+import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Leaflet.markercluster importai - įdėkite juos čia
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
+
+// Kiti importai
 import { Location, MapLayer, UserRole, LocationRating } from '../types';
 import { supabase } from '../lib/supabase';
 import { MapPin, Fish, Waves, Tent, Home, DollarSign, Lock, Unlock, Flame, ToyBrick as Toy, Utensils, Truck, MountainSnow, Star, MessageSquare, Edit, Trash, Menu, Megaphone, Filter, Sliders, Camera, Thermometer } from 'lucide-react';
@@ -11,7 +19,6 @@ import { useMap as useMapContext } from '../context/MapContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchWeatherData } from '../services/weatherService';
 import LocationMarker from './LocationMarker';
-
 
 // Fix for default marker icon issue in React Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -70,7 +77,6 @@ const DEFAULT_ZOOM = 7;
 // Component to handle map events
 const MapEventHandler = () => {
   const { handleMapContextMenu, closeContextMenu } = useMapContext();
-  
   const map = useMapEvents({
     contextmenu: (e: LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
@@ -125,82 +131,82 @@ const MapTypeControl = ({ mapType, setMapType }: {
   return (
     <div className="relative">
       <button 
-  onClick={() => setIsOpen(!isOpen)} 
-  className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 flex items-center justify-center"
-  title="Pasirinkti žemėlapio tipą"
->
-<svg viewBox="0 0 512 512" width="24" height="24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" fill="currentColor">
-  <g id="SVGRepo_iconCarrier">
-    <title>layers-filled</title>
-    <g id="Page-1" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
-      <g id="layers-filled" fill="currentColor" fillRule="nonzero">
-        <g id="drop" transform="translate(42.666667, 53.973333)">
-          <path d="M378.986667,273.557333 L426.666667,297.386667 L213.333333,404.053333 L7.10542736e-15,297.386667 L47.68,273.557333 L213.333333,356.396117 L378.986667,273.557333 Z M213.333333,190.72 L235.925333,202.026667 L213.333333,213.331174 L190.741333,202.026667 L213.333333,190.72 Z" id="Shape"></path>
-          <polygon id="Path" points="379.008 178.180039 426.666667 202.026667 213.333333 308.693333 3.55271368e-14 202.026667 47.6586667 178.180039 213.333333 261.036117"></polygon>
-          <polygon id="Combined-Shape" points="213.333333 -7.10542736e-15 426.666667 106.666667 213.333333 213.333333 3.55271368e-14 106.666667"></polygon>
-        </g>
-      </g>
-    </g>
-  </g>
-</svg>
-</button>
+        onClick={() => setIsOpen(!isOpen)} 
+        className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 flex items-center justify-center"
+        title="Pasirinkti žemėlapio tipą"
+      >
+        <svg viewBox="0 0 512 512" width="24" height="24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" fill="currentColor">
+          <g id="SVGRepo_iconCarrier">
+            <title>layers-filled</title>
+            <g id="Page-1" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+              <g id="layers-filled" fill="currentColor" fillRule="nonzero">
+                <g id="drop" transform="translate(42.666667, 53.973333)">
+                  <path d="M378.986667,273.557333 L426.666667,297.386667 L213.333333,404.053333 L7.10542736e-15,297.386667 L47.68,273.557333 L213.333333,356.396117 L378.986667,273.557333 Z M213.333333,190.72 L235.925333,202.026667 L213.333333,213.331174 L190.741333,202.026667 L213.333333,190.72 Z" id="Shape"></path>
+                  <polygon id="Path" points="379.008 178.180039 426.666667 202.026667 213.333333 308.693333 3.55271368e-14 202.026667 47.6586667 178.180039 213.333333 261.036117"></polygon>
+                  <polygon id="Combined-Shape" points="213.333333 -7.10542736e-15 426.666667 106.666667 213.333333 213.333333 3.55271368e-14 106.666667"></polygon>
+                </g>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </button>
       
-{isOpen && (
-  <div className="absolute right-0 mt-2 bg-white rounded-md shadow-lg p-2 z-10 w-48">
-    <div className="text-xs font-medium mb-1 text-gray-500">Žemėlapio tipas</div>
-    <button 
-      onClick={() => {
-        setMapType('streets');
-        setIsOpen(false);
-      }}
-      className={`w-full text-left p-2 rounded mb-1 flex items-center ${mapType === 'streets' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
-    >
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-        <g id="SVGRepo_iconCarrier">
-          <path d="M12 6H12.01M9 20L3 17V4L5 5M9 20L15 17M9 20V14M15 17L21 20V7L19 6M15 17V14M15 6.2C15 7.96731 13.5 9.4 12 11C10.5 9.4 9 7.96731 9 6.2C9 4.43269 10.3431 3 12 3C13.6569 3 15 4.43269 15 6.2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
-        </g>
-      </svg>
-      Paprastas žemėlapis
-    </button>
-    <button 
-      onClick={() => {
-        setMapType('satellite');
-        setIsOpen(false);
-      }}
-      className={`w-full text-left p-2 rounded mb-1 flex items-center ${mapType === 'satellite' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
-    >
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-        <g id="SVGRepo_iconCarrier">
-          <path d="M14.475 11.4247C14.6143 11.2854 14.7247 11.12 14.8001 10.938C14.8755 10.756 14.9143 10.561 14.9143 10.364C14.9143 10.167 14.8755 9.97196 14.8001 9.78997C14.7247 9.60798 14.6143 9.44262 14.475 9.30334C14.3357 9.16405 14.1703 9.05356 13.9883 8.97818C13.8063 8.90279 13.6113 8.864 13.4143 8.864C13.2173 8.864 13.0223 8.90279 12.8403 8.97818C12.6583 9.05356 12.4929 9.16405 12.3536 9.30334L13.4143 10.364L14.475 11.4247Z" fill="currentColor"></path>
-          <path d="M8.05887 15.9411C7.40613 15.2883 6.88835 14.5134 6.53508 13.6606C6.18182 12.8077 6 11.8936 6 10.9705C6 10.0474 6.18182 9.13331 6.53508 8.28046C6.88835 7.42761 7.40613 6.65269 8.05888 5.99995L18 15.9411C17.3473 16.5938 16.5723 17.1116 15.7195 17.4649C14.8666 17.8181 13.9526 17.9999 13.0294 17.9999C12.1063 17.9999 11.1922 17.8181 10.3394 17.4649C9.48654 17.1116 8.71162 16.5938 8.05887 15.9411ZM8.05887 15.9411L5 21H10M17.6025 9.0463C17.1056 7.87566 16.1813 6.93835 15.0177 6.42515M20.6901 8.79485C20.3187 7.49954 19.6261 6.31904 18.6766 5.36288C17.7271 4.40672 16.5514 3.7059 15.2587 3.32544" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
-        </g>
-      </svg>
-      Palydovinis vaizdas
-    </button>
-    <button 
-      onClick={() => {
-        setMapType('outdoors');
-        setIsOpen(false);
-      }}
-      className={`w-full text-left p-2 rounded flex items-center ${mapType === 'outdoors' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/><path d="M4.14 15.08c2.62-1.57 5.24-1.43 7.86.42 2.74 1.94 5.49 2 8.23.19"/></svg>
-      Reljefinis vaizdas
-    </button>
-  </div>
-)}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 bg-white rounded-md shadow-lg p-2 z-10 w-48">
+          <div className="text-xs font-medium mb-1 text-gray-500">Žemėlapio tipas</div>
+          <button 
+            onClick={() => {
+              setMapType('streets');
+              setIsOpen(false);
+            }}
+            className={`w-full text-left p-2 rounded mb-1 flex items-center ${mapType === 'streets' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+              <g id="SVGRepo_iconCarrier">
+                <path d="M12 6H12.01M9 20L3 17V4L5 5M9 20L15 17M9 20V14M15 17L21 20V7L19 6M15 17V14M15 6.2C15 7.96731 13.5 9.4 12 11C10.5 9.4 9 7.96731 9 6.2C9 4.43269 10.3431 3 12 3C13.6569 3 15 4.43269 15 6.2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+              </g>
+            </svg>
+            Paprastas žemėlapis
+          </button>
+          <button 
+            onClick={() => {
+              setMapType('satellite');
+              setIsOpen(false);
+            }}
+            className={`w-full text-left p-2 rounded mb-1 flex items-center ${mapType === 'satellite' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+              <g id="SVGRepo_iconCarrier">
+                <path d="M14.475 11.4247C14.6143 11.2854 14.7247 11.12 14.8001 10.938C14.8755 10.756 14.9143 10.561 14.9143 10.364C14.9143 10.167 14.8755 9.97196 14.8001 9.78997C14.7247 9.60798 14.6143 9.44262 14.475 9.30334C14.3357 9.16405 14.1703 9.05356 13.9883 8.97818C13.8063 8.90279 13.6113 8.864 13.4143 8.864C13.2173 8.864 13.0223 8.90279 12.8403 8.97818C12.6583 9.05356 12.4929 9.16405 12.3536 9.30334L13.4143 10.364L14.475 11.4247Z" fill="currentColor"></path>
+                <path d="M8.05887 15.9411C7.40613 15.2883 6.88835 14.5134 6.53508 13.6606C6.18182 12.8077 6 11.8936 6 10.9705C6 10.0474 6.18182 9.13331 6.53508 8.28046C6.88835 7.42761 7.40613 6.65269 8.05888 5.99995L18 15.9411C17.3473 16.5938 16.5723 17.1116 15.7195 17.4649C14.8666 17.8181 13.9526 17.9999 13.0294 17.9999C12.1063 17.9999 11.1922 17.8181 10.3394 17.4649C9.48654 17.1116 8.71162 16.5938 8.05887 15.9411ZM8.05887 15.9411L5 21H10M17.6025 9.0463C17.1056 7.87566 16.1813 6.93835 15.0177 6.42515M20.6901 8.79485C20.3187 7.49954 19.6261 6.31904 18.6766 5.36288C17.7271 4.40672 16.5514 3.7059 15.2587 3.32544" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
+              </g>
+            </svg>
+            Palydovinis vaizdas
+          </button>
+          <button 
+            onClick={() => {
+              setMapType('outdoors');
+              setIsOpen(false);
+            }}
+            className={`w-full text-left p-2 rounded flex items-center ${mapType === 'outdoors' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/><path d="M4.14 15.08c2.62-1.57 5.24-1.43 7.86.42 2.74 1.94 5.49 2 8.23.19"/></svg>
+            Reljefinis vaizdas
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-// Naujas kodas (įdėkite)
+// FilterControls component
 const FilterControls = ({ 
   minRating, 
-  setMinRating, 
+  setMinRating,  
   showFreeOnly, 
-  setShowFreeOnly, 
+  setShowFreeOnly,  
   showPaidOnly, 
-  setShowPaidOnly,
+  setShowPaidOnly, 
   isFilterOpen,
   toggleFilter,
   filterRadius,
@@ -220,106 +226,96 @@ const FilterControls = ({
   return (
     <>
       {/* Filter panel content */}
-      <div className="bg-white rounded-md shadow-md p-3 max-w-xs">          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-medium text-sm">Filtrai</h3>
-            <button 
-              onClick={toggleFilter}
-              className="md:hidden text-gray-500"
-            >
-              <Sliders size={16} />
-            </button>
+      <div className="bg-white rounded-md shadow-md p-3 max-w-xs">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-medium text-sm">Filtrai</h3>
+          <button 
+            onClick={toggleFilter}
+            className="md:hidden text-gray-500"
+          >
+            <Sliders size={16} />
+          </button>
+        </div>
+        <div className="mb-3">
+          <label className="text-xs font-medium block mb-1">Minimalus įvertinimas</label>
+          <div className="flex space-x-1">
+            {[0, 1, 2, 3, 4, 5].map(rating => (
+              <button
+                key={rating}
+                onClick={() => setMinRating(rating)}
+                className={`w-8 h-8 flex items-center justify-center rounded ${minRating === rating ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+              >
+                {rating === 0 ? 'Visi' : rating}
+              </button>
+            ))}
           </div>
-          
-          <div className="mb-3">
-  <label className="text-xs font-medium block mb-1">Minimalus įvertinimas</label>
-  <div className="flex space-x-1">
-    {[0, 1, 2, 3, 4, 5].map(rating => (
-      <button
-        key={rating}
-        onClick={() => setMinRating(rating)}
-        className={`w-8 h-8 flex items-center justify-center rounded ${
-          minRating === rating ? 'bg-blue-500 text-white' : 'bg-gray-100'
-        }`}
-      >
-        {rating === 0 ? 'Visi' : rating}
-      </button>
-    ))}
-  </div>
-</div>
-          
-<div className="flex space-x-2 mb-2">
-  <button
-    onClick={() => {
-      // Jei jau aktyvus, išjungiame
-      if (showFreeOnly) {
-        setShowFreeOnly(false);
-        setShowPaidOnly(false);
-      } else {
-        // Jei neaktyvus, įjungiame ir išjungiame kitą
-        setShowFreeOnly(true);
-        setShowPaidOnly(false);
-      }
-    }}
-    className={`px-2 py-1 text-xs rounded flex-1 ${
-      showFreeOnly ? 'bg-green-500 text-white' : 'bg-gray-100'
-    }`}
-  >
-    Nemokamos
-  </button>
-  <button
-    onClick={() => {
-      // Jei jau aktyvus, išjungiame
-      if (showPaidOnly) {
-        setShowFreeOnly(false);
-        setShowPaidOnly(false);
-      } else {
-        // Jei neaktyvus, įjungiame ir išjungiame kitą
-        setShowFreeOnly(false);
-        setShowPaidOnly(true);
-      }
-    }}
-    className={`px-2 py-1 text-xs rounded flex-1 ${
-      showPaidOnly ? 'bg-amber-500 text-white' : 'bg-gray-100'
-    }`}
-  >
-    Mokamos
-  </button>
-</div>
-          
-          <div className="mb-3">
+        </div>
+        <div className="flex space-x-2 mb-2">
+          <button
+            onClick={() => {
+              // Jei jau aktyvus, išjungiame
+              if (showFreeOnly) {
+                setShowFreeOnly(false);
+                setShowPaidOnly(false);
+              } else {
+                // Jei neaktyvus, įjungiame ir išjungiame kitą
+                setShowFreeOnly(true);
+                setShowPaidOnly(false);
+              }
+            }}
+            className={`px-2 py-1 text-xs rounded flex-1 ${showFreeOnly ? 'bg-green-500 text-white' : 'bg-gray-100'}`}
+          >
+            Nemokamos
+          </button>
+          <button
+            onClick={() => {
+              // Jei jau aktyvus, išjungiame
+              if (showPaidOnly) {
+                setShowFreeOnly(false);
+                setShowPaidOnly(false);
+              } else {
+                // Jei neaktyvus, įjungiame ir išjungiame kitą
+                setShowFreeOnly(false);
+                setShowPaidOnly(true);
+              }
+            }}
+            className={`px-2 py-1 text-xs rounded flex-1 ${showPaidOnly ? 'bg-amber-500 text-white' : 'bg-gray-100'}`}
+          >
+            Mokamos
+          </button>
+        </div>
+        <div className="mb-3">
           <label className="text-xs font-medium block mb-1">Atstumas nuo manęs ({filterRadius} km)</label>
           <input 
-  type="range" 
-  min="0" 
-  max="100" 
-  step="1"
-  value={filterRadius}
-  onChange={(e) => {
-    const newValue = parseInt(e.target.value);
-    setFilterRadius(newValue);
-    
-    // Perduodame į kitus komponentus per event
-    const event = new CustomEvent('setFilterRadius', {
-      detail: {
-        value: newValue
-      }
-    });
-    document.dispatchEvent(event);
-  }}
-  className="w-full"
-/>
+            type="range" 
+            min="0" 
+            max="100" 
+            step="1"
+            value={filterRadius}
+            onChange={(e) => {
+              const newValue = parseInt(e.target.value);
+              setFilterRadius(newValue);
+              // Perduodame į kitus komponentus per event
+              const event = new CustomEvent('setFilterRadius', {
+                detail: {
+                  value: newValue
+                }
+              });
+              document.dispatchEvent(event);
+            }}
+            className="w-full"
+          />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>Išjungta</span>
             <span>50 km</span>
             <span>100 km</span>
           </div>
         </div>
-
-           <div className="text-xs text-gray-500 flex items-center">
-            <Thermometer size={14} className="mr-1" /> 
-            Orų duomenys atnaujinti prieš 15 min.
-          </div>
+        <div className="text-xs text-gray-500 flex items-center">
+          <Thermometer size={14} className="mr-1" /> 
+          Orų duomenys atnaujinti prieš 15 min.
         </div>
+      </div>
     </>
   );
 };
@@ -337,6 +333,34 @@ const MapReadyDetector = ({ onMapReady }: { onMapReady: () => void }) => {
       }, 500);
     }
   }, [map, onMapReady]);
+  
+  return null;
+};
+
+// MapBoundsListener component
+const MapBoundsListener: React.FC<{ onBoundsChange: (bounds: any) => void }> = ({ onBoundsChange }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    const updateBounds = () => {
+      const bounds = map.getBounds();
+      onBoundsChange({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest()
+      });
+    };
+    
+    updateBounds();
+    map.on('moveend', updateBounds);
+    map.on('zoomend', updateBounds);
+    
+    return () => {
+      map.off('moveend', updateBounds);
+      map.off('zoomend', updateBounds);
+    };
+  }, [map, onBoundsChange]);
   
   return null;
 };
@@ -366,109 +390,148 @@ const Map: React.FC = () => {
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const mapRef = useRef<any>(null);
+  const [mapBounds, setMapBounds] = useState<{
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null>(null);
+  const [filterRadius, setFilterRadius] = useState<number>(0);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [hasShownLocationWarning, setHasShownLocationWarning] = useState<boolean>(false);
+
+  const handleBoundsChange = useCallback((bounds: any) => {
+    setMapBounds(bounds);
+  }, []);
+  
+  // Žemėlapio riboms stebėti
+  useEffect(() => {
+    if (!mapReady || !mapBounds) return;
+    console.log('Map bounds changed:', mapBounds);
+    
+    const loadLocationsInView = async () => {
+      try {
+        setLoading(true);
+        // Pataisyta eilutė, išvengiant void tipo klaidos
+        const fetchResult = await fetchLocationsByBounds(mapBounds, userRole);
+        const locationsInView = Array.isArray(fetchResult) ? fetchResult : [];
+        
+        setLocations(prevLocations => {
+          const existingIds = new Set(prevLocations.map(loc => loc.id));
+          const newLocations = locationsInView.filter((loc: Location) => !existingIds.has(loc.id));
+          return [...prevLocations, ...newLocations];
+        });
+      } catch (error) {
+        console.error('Error loading locations in view:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadLocationsInView();
+  }, [mapBounds, mapReady, userRole]);
+
   // Pridėkime įvykių klausymąsi žemėlapio centravimui
-useEffect(() => {
-  const handleMapCenter = (event: any) => {
-    const { lat, lng, zoom } = event.detail;
-    if (mapRef.current) {
-      mapRef.current.setView([lat, lng], zoom);
-    }
-  };
+  useEffect(() => {
+    const handleMapCenter = (event: any) => {
+      const { lat, lng, zoom } = event.detail;
+      if (mapRef.current) {
+        mapRef.current.setView([lat, lng], zoom);
+      }
+    };
 
-  // Užregistruokime įvykio klausymą
-  document.addEventListener('mapCenter', handleMapCenter);
+    // Užregistruokime įvykio klausymą
+    document.addEventListener('mapCenter', handleMapCenter);
 
-  return () => {
-    // Išregistruojame įvykio klausymą
-    document.removeEventListener('mapCenter', handleMapCenter);
-  };
-}, []);
-// Klausomės vartotojo pozicijos pasikeitimo
-useEffect(() => {
-  const handleUserPositionChanged = (event: any) => {
-    const { position } = event.detail;
-    setUserPosition(position);
-  };
+    return () => {
+      // Išregistruojame įvykio klausymą
+      document.removeEventListener('mapCenter', handleMapCenter);
+    };
+  }, []);
 
-  // Užregistruokime įvykio klausymą
-  document.addEventListener('userPositionChanged', handleUserPositionChanged);
+  // Klausomės vartotojo pozicijos pasikeitimo
+  useEffect(() => {
+    const handleUserPositionChanged = (event: any) => {
+      const { position } = event.detail;
+      setUserPosition(position);
+    };
 
-  return () => {
-    // Išregistruojame įvykio klausymą
-    document.removeEventListener('userPositionChanged', handleUserPositionChanged);
-  };
-}, []);
-// Klausomės filtro keitimo įvykio
-useEffect(() => {
-  const handleSetFilterRadius = (event: any) => {
-    const { value } = event.detail;
-    setFilterRadius(value);
-  };
+    // Užregistruokime įvykio klausymą
+    document.addEventListener('userPositionChanged', handleUserPositionChanged);
 
-  // Užregistruokime įvykio klausymą
-  document.addEventListener('setFilterRadius', handleSetFilterRadius);
+    return () => {
+      // Išregistruojame įvykio klausymą
+      document.removeEventListener('userPositionChanged', handleUserPositionChanged);
+    };
+  }, []);
 
-  return () => {
-    // Išregistruojame įvykio klausymą
-    document.removeEventListener('setFilterRadius', handleSetFilterRadius);
-  };
-}, []);
+  // Klausomės filtro keitimo įvykio
+  useEffect(() => {
+    const handleSetFilterRadius = (event: any) => {
+      const { value } = event.detail;
+      setFilterRadius(value);
+    };
 
-// Klausomės reitingo filtro keitimo įvykio
-useEffect(() => {
-  const handleSetFilterRating = (event: any) => {
-    const { value } = event.detail;
-    setMinRating(value);
-  };
+    // Užregistruokime įvykio klausymą
+    document.addEventListener('setFilterRadius', handleSetFilterRadius);
 
-  // Užregistruokime įvykio klausymą
-  document.addEventListener('setFilterRating', handleSetFilterRating);
+    return () => {
+      // Išregistruojame įvykio klausymą
+      document.removeEventListener('setFilterRadius', handleSetFilterRadius);
+    };
+  }, []);
 
-  return () => {
-    // Išregistruojame įvykio klausymą
-    document.removeEventListener('setFilterRating', handleSetFilterRating);
-  };
-}, []);
+  // Klausomės reitingo filtro keitimo įvykio
+  useEffect(() => {
+    const handleSetFilterRating = (event: any) => {
+      const { value } = event.detail;
+      setMinRating(value);
+    };
 
-// Klausomės mokama/nemokama filtro keitimo įvykio
-useEffect(() => {
-  const handleSetFilterPaidStatus = (event: any) => {
-    const { showFreeOnly, showPaidOnly } = event.detail;
-    setShowFreeOnly(showFreeOnly);
-    setShowPaidOnly(showPaidOnly);
-  };
+    // Užregistruokime įvykio klausymą
+    document.addEventListener('setFilterRating', handleSetFilterRating);
 
-  // Užregistruokime įvykio klausymą
-  document.addEventListener('setFilterPaidStatus', handleSetFilterPaidStatus);
+    return () => {
+      // Išregistruojame įvykio klausymą
+      document.removeEventListener('setFilterRating', handleSetFilterRating);
+    };
+  }, []);
 
-  return () => {
-    // Išregistruojame įvykio klausymą
-    document.removeEventListener('setFilterPaidStatus', handleSetFilterPaidStatus);
-  };
-}, []);
+  // Klausomės mokama/nemokama filtro keitimo įvykio
+  useEffect(() => {
+    const handleSetFilterPaidStatus = (event: any) => {
+      const { showFreeOnly, showPaidOnly } = event.detail;
+      setShowFreeOnly(showFreeOnly);
+      setShowPaidOnly(showPaidOnly);
+    };
+
+    // Užregistruokime įvykio klausymą
+    document.addEventListener('setFilterPaidStatus', handleSetFilterPaidStatus);
+
+    return () => {
+      // Išregistruojame įvykio klausymą
+      document.removeEventListener('setFilterPaidStatus', handleSetFilterPaidStatus);
+    };
+  }, []);
 
   // Funkcija centruoti žemėlapį pagal vartotojo poziciją
-const centerMapOnUser = (zoom: number = 14) => {
-  if (userPosition && mapRef.current) {
-    mapRef.current.setView(userPosition, zoom);
-  } else if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        if (mapRef.current) {
-          mapRef.current.setView([latitude, longitude], zoom);
+  const centerMapOnUser = (zoom: number = 14) => {
+    if (userPosition && mapRef.current) {
+      mapRef.current.setView(userPosition, zoom);
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          if (mapRef.current) {
+            mapRef.current.setView([latitude, longitude], zoom);
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          alert('Nepavyko nustatyti jūsų buvimo vietos. Patikrinkite lokacijos leidimus.');
         }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        alert('Nepavyko nustatyti jūsų buvimo vietos. Patikrinkite lokacijos leidimus.');
-      }
-    );
-  }
-};
-  const [filterRadius, setFilterRadius] = useState<number>(0);
-const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
-const [hasShownLocationWarning, setHasShownLocationWarning] = useState<boolean>(false);
+      );
+    }
+  };
 
   // Get current user
   useEffect(() => {
@@ -493,139 +556,132 @@ const [hasShownLocationWarning, setHasShownLocationWarning] = useState<boolean>(
         console.error('Error getting user session:', error);
       }
     };
-    
     getUser();
   }, []);
 
-// src/components/Map.tsx - redaguokite useEffect, kuris užkrauna vietas
-
-useEffect(() => {
-  const updateLocationsWithWeather = async (locationsData: any[]) => {
-    // Sukuriame kopijas, kad nemodifikuotume tiesioginių reikšmių
-    const updatedLocations = [...locationsData];
-    
-    // Pasiruošiame asmeninio atnaujinimo limitus
-    const MAX_CONCURRENT_UPDATES = 3;
-    const locationsToUpdate = [];
-    
-    // Peržiūrime visas lokacijas
-    for (let i = 0; i < updatedLocations.length; i++) {
-      const location = updatedLocations[i];
+  // src/components/Map.tsx - redaguokite useEffect, kuris užkrauna vietas
+  useEffect(() => {
+    const updateLocationsWithWeather = async (locationsData: any[]) => {
+      // Sukuriame kopijas, kad nemodifikuotume tiesioginių reikšmių
+      const updatedLocations = [...locationsData];
+      // Pasiruošiame asmeninio atnaujinimo limitus
+      const MAX_CONCURRENT_UPDATES = 3;
+      const locationsToUpdate = [];
       
-      // Jei turi koordinates ir neturi naujų orų duomenų, pridedame į eilę
-      if (location.latitude && location.longitude && 
-        (!location.weather_data || 
-         !location.weather_data.lastUpdated || 
-         new Date().getTime() - new Date(location.weather_data.lastUpdated).getTime() > 60 * 60 * 1000)) {
-        locationsToUpdate.push(i);
-      }
-    }
-    
-    // Atnaujinkime kiekvienos lokacijos orus iki MAX_CONCURRENT_UPDATES vienu metu
-    for (let i = 0; i < locationsToUpdate.length; i += MAX_CONCURRENT_UPDATES) {
-      const batch = locationsToUpdate.slice(i, i + MAX_CONCURRENT_UPDATES);
-      await Promise.all(batch.map(async (index) => {
-        try {
-          const location = updatedLocations[index];
-          
-          // Gauname tikrus orų duomenis visoms vietoms, be išimčių
-          const weatherData = await fetchWeatherData(location.latitude, location.longitude);
-          if (weatherData) {
-            updatedLocations[index] = {
-              ...location,
-              weather_data: {
-                ...weatherData,
-                lastUpdated: new Date().toISOString()
-              }
-            };
-          }
-        } catch (error) {
-          console.error(`Error updating weather for location at index ${index}:`, error);
+      // Peržiūrime visas lokacijas
+      for (let i = 0; i < updatedLocations.length; i++) {
+        const location = updatedLocations[i];
+        
+        // Jei turi koordinates ir neturi naujų orų duomenų, pridedame į eilę
+        if (location.latitude && location.longitude && 
+          (!location.weather_data || 
+           !location.weather_data.lastUpdated || 
+           new Date().getTime() - new Date(location.weather_data.lastUpdated).getTime() > 60 * 60 * 1000)) {
+          locationsToUpdate.push(i);
         }
-      }));
-      
-      // Pridedame mažą pauzę tarp kiekvieno batch'o
-      if (i + MAX_CONCURRENT_UPDATES < locationsToUpdate.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
       }
-    }
-    
-    // Atnaujiname state'ą
-    setLocations(updatedLocations);
-  };
+      
+      // Atnaujinkime kiekvienos lokacijos orus iki MAX_CONCURRENT_UPDATES vienu metu
+      for (let i = 0; i < locationsToUpdate.length; i += MAX_CONCURRENT_UPDATES) {
+        const batch = locationsToUpdate.slice(i, i + MAX_CONCURRENT_UPDATES);
+        await Promise.all(batch.map(async (index) => {
+          try {
+            const location = updatedLocations[index];
+            // Gauname tikrus orų duomenis visoms vietoms, be išimčių
+            const weatherData = await fetchWeatherData(location.latitude, location.longitude);
+            if (weatherData) {
+              updatedLocations[index] = {
+                ...location,
+                weather_data: {
+                  ...weatherData,
+                  lastUpdated: new Date().toISOString()
+                }
+              };
+            }
+          } catch (error) {
+            console.error(`Error updating weather for location at index ${index}:`, error);
+          }
+        }));
+        
+        // Pridedame mažą pauzę tarp kiekvieno batch'o
+        if (i + MAX_CONCURRENT_UPDATES < locationsToUpdate.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      // Atnaujiname state'ą
+      setLocations(updatedLocations);
+    };
 
-  const fetchLocations = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch all locations - we want everyone to see all locations
-      let query = supabase.from('locations').select('*');
-      
-      // If not admin or moderator, only show approved locations
-      if (userRole !== 'admin' && userRole !== 'moderator') {
-        query = query.eq('is_approved', true);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching locations:', error);
-        setLocations(generateMockLocations());
+    const fetchLocations = async () => {
+      try {
+        setLoading(true);
+        // Fetch all locations - we want everyone to see all locations
+        let query = supabase.from('locations').select('*');
+        // If not admin or moderator, only show approved locations
+        if (userRole !== 'admin' && userRole !== 'moderator') {
+          query = query.eq('is_approved', true);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching locations:', error);
+          setLocations(generateMockLocations());
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Got locations data:", data?.length || 0);
+        
+        // Generate mock data if no data is returned
+        const mockLocations = data && data.length > 0 ? data : generateMockLocations();
+        
+        // Ensure all locations have required properties
+        const updatedLocations = mockLocations.map(location => {
+          // Ensure we have valid categories array
+          const categories = Array.isArray(location.categories) ? location.categories : [];
+          // Ensure we have valid images array
+          const images = Array.isArray(location.images) ? location.images : [];
+          return {
+            ...location,
+            categories,
+            images
+          };
+        });
+        
+        console.log("Processed locations:", updatedLocations.length);
+        
+        // Delay setting the locations to ensure the map is ready
+        setTimeout(() => {
+          // Tiesiog nustatome lokacijas be orų, orus atnaujinsime vėliau 
+          // atskirame useEffect bloke, kurį pridėjome
+          setLocations(updatedLocations);
+          setLoading(false);
+        }, 500);
+        
+      } catch (error) {
+        console.error('Error in fetchLocations:', error);
+        // Generate mock data if there's an error
+        const mockLocations = generateMockLocations();
+        setLocations(mockLocations);
         setLoading(false);
-        return;
       }
-      
-      console.log("Got locations data:", data?.length || 0);
-      
-      // Generate mock data if no data is returned
-const mockLocations = data && data.length > 0 ? data : generateMockLocations();
-
-// Ensure all locations have required properties
-const updatedLocations = mockLocations.map(location => {
-  // Ensure we have valid categories array
-  const categories = Array.isArray(location.categories) ? location.categories : [];
-  // Ensure we have valid images array
-  const images = Array.isArray(location.images) ? location.images : [];
-  
-  return {
-    ...location,
-    categories,
-    images
-  };
-});
-      
-      console.log("Processed locations:", updatedLocations.length);
-      
-      // Delay setting the locations to ensure the map is ready
-setTimeout(() => {
-  // Tiesiog nustatome lokacijas be orų, orus atnaujinsime vėliau 
-  // atskirame useEffect bloke, kurį pridėjome
-  setLocations(updatedLocations);
-  setLoading(false);
-}, 500);
-      
-    } catch (error) {
-      console.error('Error in fetchLocations:', error);
-      // Generate mock data if there's an error
-      const mockLocations = generateMockLocations();
-      setLocations(mockLocations);
-      setLoading(false);
-    }
-  };
-  
-  if (mapReady) {
-    fetchLocations();
-  } else {
-    // Set a timeout to fetch locations even if mapReady doesn't trigger
-    const timer = setTimeout(() => {
-      console.log("Fetching locations after timeout");
-      fetchLocations();
-    }, 2000);
+    };
     
-    return () => clearTimeout(timer);
-  }
-}, [userRole, mapReady]);
-  
+    if (mapReady) {
+      fetchLocations();
+    } else {
+      // Set a timeout to fetch locations even if mapReady doesn't trigger
+      const timer = setTimeout(() => {
+        console.log("Fetching locations after timeout");
+        fetchLocations();
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userRole, mapReady]);
+
   // Generate mock locations if Supabase connection fails
   const generateMockLocations = (): Location[] => {
     return [
@@ -709,144 +765,141 @@ setTimeout(() => {
     setMapReady(true);
   }, []);
 
-// Fetch ratings for locations
-useEffect(() => {
-  const fetchAllRatings = async () => {
-    try {
-      console.log("Fetching ratings for locations...");
-      const { data, error } = await supabase
-        .from('location_ratings')
-        .select('*');
+  // Fetch ratings for locations
+  useEffect(() => {
+    const fetchAllRatings = async () => {
+      try {
+        console.log("Fetching ratings for locations...");
+        const { data, error } = await supabase
+          .from('location_ratings')
+          .select('*');
+        if (error) throw error;
         
-      if (error) throw error;
-      
-      console.log(`Got ${data?.length || 0} ratings from database`);
-      setRatings(data || []);
-      
-      // Calculate average ratings for each location
-      const locationRatings = data?.reduce((acc, rating) => {
-        if (!acc[rating.location_id]) {
-          acc[rating.location_id] = [];
-        }
-        acc[rating.location_id].push(rating.rating);
-        return acc;
-      }, {} as Record<string, number[]>);
-      
-      // Update locations with calculated average ratings
-      setLocations(prevLocations => {
-        const updatedLocations = prevLocations.map(location => {
-          const ratingsForLocation = locationRatings?.[location.id] || [];
-          const avgRating = ratingsForLocation.length > 0 
-            ? Number((ratingsForLocation.reduce((sum: number, r: number) => sum + r, 0) / ratingsForLocation.length).toFixed(1))
-            : undefined;  // Naudojame undefined vietoj null
+        console.log(`Got ${data?.length || 0} ratings from database`);
+        setRatings(data || []);
+        
+        // Calculate average ratings for each location
+        const locationRatings = data?.reduce((acc, rating) => {
+          if (!acc[rating.location_id]) {
+            acc[rating.location_id] = [];
+          }
+          acc[rating.location_id].push(rating.rating);
+          return acc;
+        }, {} as Record<string, number[]>);
+        
+        // Update locations with calculated average ratings
+        setLocations(prevLocations => {
+          const updatedLocations = prevLocations.map(location => {
+            const ratingsForLocation = locationRatings?.[location.id] || [];
+            const avgRating = ratingsForLocation.length > 0 
+              ? Number((ratingsForLocation.reduce((sum: number, r: number) => sum + r, 0) / ratingsForLocation.length).toFixed(1))
+              : undefined;  // Naudojame undefined vietoj null
+            return {
+              ...location,
+              rating: avgRating
+            };
+          });
           
-          return {
-            ...location,
-            rating: avgRating
-          };
+          // Log how many locations got ratings
+          const withRatings = updatedLocations.filter(loc => loc.rating !== undefined).length;
+          console.log(`Updated ${withRatings} locations with ratings`);
+          
+          return updatedLocations;
         });
-        
-        // Log how many locations got ratings
-        const withRatings = updatedLocations.filter(loc => loc.rating !== undefined).length;
-        console.log(`Updated ${withRatings} locations with ratings`);
-        
-        return updatedLocations;
-      });
-    } catch (error) {
-      console.error('Error fetching ratings:', error);
-    }
-  };
-  
-  // Only fetch when locations are loaded
-  if (locations.length > 0) {
-    fetchAllRatings();
-  }
-}, [locations.length]);
-  
-
-// Funkcija atstumui tarp dviejų taškų skaičiuoti (kilometrais)
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; // Žemės spindulys kilometrais
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
-
-  // Filter locations based on active layers, rating, and paid/free status
-const filteredLocations = locations.filter(location => {
-  // Safety check for null location objects
-  if (!location || !location.latitude || !location.longitude) return false;
-  
-  // Diagnostinis pranešimas - įjunkite tik derinimui
-  const isDebug = false;
-  if (isDebug) {
-    console.log(`Filtering location: ${location.name}`);
-  }
-    
-    // If location.categories doesn't exist, use empty array
-    const categories = location.categories || [];
-    
-    // Filter by active layers
-    const matchesLayer = categories.some(category => 
-      layers.some(layer => layer.isActive && layer.category === category)
-    );
-    
-    if (isDebug && !matchesLayer) {
-      console.log(`  - Layer filter failed: ${categories.join(', ')}`);
-    }
-    
-    // Filter by minimum rating
-const matchesRating = 
-minRating === 0 || 
-(location.rating !== undefined && location.rating >= minRating);
-    
-    if (isDebug && !matchesRating) {
-      console.log(`  - Rating filter failed: ${location.rating} < ${minRating}`);
-    }
-    
-    // Filter by paid/free status
-    const matchesPaidStatus = 
-      (!showPaidOnly && !showFreeOnly) || 
-      (showPaidOnly && location.is_paid) || 
-      (showFreeOnly && !location.is_paid);
-    
-    if (isDebug && !matchesPaidStatus) {
-      console.log(`  - Paid status filter failed: is_paid=${location.is_paid}, showPaidOnly=${showPaidOnly}, showFreeOnly=${showFreeOnly}`);
-    }
-    
-    // Filter by distance from user
-    // Filter by distance from user
-let matchesDistance = true;
-if (filterRadius > 0) {
-  if (userPosition) {
-    const distance = calculateDistance(
-      userPosition[0], userPosition[1], 
-      location.latitude, location.longitude
-    );
-    matchesDistance = distance <= filterRadius;
-  } else {
-    // Jei nėra vartotojo pozicijos, bet filtras aktyvus, vistiek rodome viską
-    matchesDistance = true;
-  }
-}
-    
-    const result = matchesLayer && matchesRating && matchesPaidStatus && matchesDistance;
-    
-    if (isDebug) {
-      if (result) {
-        console.log(`  - Location passed all filters`);
-      } else {
-        console.log(`  - Location filtered out`);
+      } catch (error) {
+        console.error('Error fetching ratings:', error);
       }
-    }
+    };
     
+    // Only fetch when locations are loaded
+    if (locations.length > 0) {
+      fetchAllRatings();
+    }
+  }, [locations.length]);
+  
+  // Funkcija atstumui tarp dviejų taškų skaičiuoti (kilometrais)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Žemės spindulys kilometrais
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Optimized with useMemo
+  const filteredLocations = useMemo(() => {
+    console.time('locations-filter');
+    
+    const result = locations.filter(location => {
+      // Safety check for null location objects
+      if (!location || !location.latitude || !location.longitude) return false;
+      
+      // Diagnostinis pranešimas - įjunkite tik derinimui
+      const isDebug = false;
+      if (isDebug) {
+        console.log(`Filtering location: ${location.name}`);
+      }
+      
+      // If location.categories doesn't exist, use empty array
+      const categories = location.categories || [];
+      
+      // Filter by active layers
+      const matchesLayer = categories.some(category => 
+        layers.some(layer => layer.isActive && layer.category === category)
+      );
+      if (isDebug && !matchesLayer) {
+        console.log(`  - Layer filter failed: ${categories.join(', ')}`);
+      }
+      
+      // Filter by minimum rating
+      const matchesRating = 
+        minRating === 0 || 
+        (location.rating !== undefined && location.rating >= minRating);
+      if (isDebug && !matchesRating) {
+        console.log(`  - Rating filter failed: ${location.rating} < ${minRating}`);
+      }
+      
+      // Filter by paid/free status
+      const matchesPaidStatus = 
+        (!showPaidOnly && !showFreeOnly) || 
+        (showPaidOnly && location.is_paid) || 
+        (showFreeOnly && !location.is_paid);
+      if (isDebug && !matchesPaidStatus) {
+        console.log(`  - Paid status filter failed: is_paid=${location.is_paid}, showPaidOnly=${showPaidOnly}, showFreeOnly=${showFreeOnly}`);
+      }
+      
+      // Filter by distance from user
+      let matchesDistance = true;
+      if (filterRadius > 0) {
+        if (userPosition) {
+          const distance = calculateDistance(
+            userPosition[0], userPosition[1], 
+            location.latitude, location.longitude
+          );
+          matchesDistance = distance <= filterRadius;
+        } else {
+          // Jei nėra vartotojo pozicijos, bet filtras aktyvus, vistiek rodome viską
+          matchesDistance = true;
+        }
+      }
+      
+      return matchesLayer && matchesRating && matchesPaidStatus && matchesDistance;
+    });
+    
+    console.timeEnd('locations-filter');
     return result;
-  });
+  }, [
+    locations, 
+    layers, 
+    minRating, 
+    showFreeOnly, 
+    showPaidOnly, 
+    filterRadius, 
+    userPosition
+  ]);
 
   // Get icon for location based on its primary category
   const getLocationIcon = (location: Location) => {
@@ -869,86 +922,39 @@ if (filterRadius > 0) {
     return layer ? createCategoryIcon(primaryCategory, layer.color) : DefaultIcon;
   };
 
-  // Handle location click
-const handleLocationClick = (location: Location) => {
-  console.log("Location clicked:", location.name);
-  // Atlaisvinkime bet kokius atidarytus popup
-  setShowPopup(null);
-  // Tada nustatykime pasirinktą vietą ir atidarykime detalių modalą
-  setTimeout(() => {
-    setSelectedLocation(location);
-    setShowLocationDetails(true);
-  }, 10);
-};
+  // Optimized with useCallback
+  const handleLocationClick = useCallback((location: Location) => {
+    console.log("Location clicked:", location.name);
+    // Atlaisvinkime bet kokius atidarytus popup
+    setShowPopup(null);
+    // Tada nustatykime pasirinktą vietą ir atidarykime detalių modalą
+    setTimeout(() => {
+      setSelectedLocation(location);
+      setShowLocationDetails(true);
+    }, 10);
+  }, []);
 
-  // Handle location context menu
-  const handleLocationContextMenu = (location: Location, event: React.MouseEvent) => {
+  // Optimized with useCallback
+  const handleLocationContextMenu = useCallback((location: Location, event: React.MouseEvent) => {
     event.preventDefault();
-    
     if (userRole !== 'admin' && userRole !== 'moderator') return;
-    
     setLocationContextMenu({
       location,
       x: event.clientX,
       y: event.clientY
     });
-  };
+  }, [userRole]);
 
-  // Handle location edit
-  const handleEditLocation = (location: Location) => {
+  // Optimized with useCallback
+  const handleEditLocation = useCallback((location: Location) => {
     setEditingLocation(location);
     setShowEditModal(true);
     setLocationContextMenu(null);
-  };
+  }, []);
 
-  // Handle save edited location
-  const handleSaveEditedLocation = async (updatedLocation: Location) => {
-    try {
-      const { error } = await supabase
-        .from('locations')
-        .update({
-          name: updatedLocation.name,
-          description: updatedLocation.description,
-          latitude: updatedLocation.latitude,
-          longitude: updatedLocation.longitude,
-          categories: updatedLocation.categories,
-          is_public: updatedLocation.is_public,
-          is_paid: updatedLocation.is_paid,
-          main_image_index: updatedLocation.main_image_index,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', updatedLocation.id);
-        
-      if (error) throw error;
-      
-      // Update local state
-      setLocations(locations.map(loc => 
-        loc.id === updatedLocation.id ? updatedLocation : loc
-      ));
-      
-      setShowEditModal(false);
-      setEditingLocation(null);
-      
-      alert('Vieta sėkmingai atnaujinta!');
-    } catch (error) {
-      console.error('Error updating location:', error);
-      
-      // Update local state anyway to provide a good user experience
-      setLocations(locations.map(loc => 
-        loc.id === updatedLocation.id ? updatedLocation : loc
-      ));
-      
-      setShowEditModal(false);
-      setEditingLocation(null);
-      
-      alert('Vieta atnaujinta lokaliai. Duomenų bazės atnaujinimas nepavyko, bet pakeitimai išsaugoti šioje sesijoje.');
-    }
-  };
-
-  // Handle location delete
-  const handleDeleteLocation = async (location: Location) => {
+  // Optimized with useCallback
+  const handleDeleteLocation = useCallback(async (location: Location) => {
     if (userRole !== 'admin' && userRole !== 'moderator') return;
-    
     if (window.confirm('Ar tikrai norite ištrinti šią vietą?')) {
       try {
         const { error } = await supabase
@@ -971,7 +977,7 @@ const handleLocationClick = (location: Location) => {
         alert('Vieta ištrinta lokaliai. Duomenų bazės atnaujinimas nepavyko, bet pakeitimai išsaugoti šioje sesijoje.');
       }
     }
-  };
+  }, [userRole, locations]);
 
   // Toggle filter panel
   const toggleFilter = () => {
@@ -1031,38 +1037,120 @@ const handleLocationClick = (location: Location) => {
     }).filter(Boolean); // Pašaliname null reikšmes, jei tokių būtų
   };
   
-// Diagnostikos funkcija
-const logState = () => {
-  console.log("Current state:");
-  console.log("- userPosition:", userPosition);
-  console.log("- filterRadius:", filterRadius);
-  console.log("- minRating:", minRating);
-  console.log("- showFreeOnly:", showFreeOnly);
-  console.log("- showPaidOnly:", showPaidOnly);
-  console.log("- layers:", layers.map(l => `${l.name}: ${l.isActive}`).join(", "));
-  console.log("- filteredLocations:", filteredLocations.length);
-  console.log("- total locations:", locations.length);
-  
-  // Locations with ratings
-  const locationsWithRatings = locations.filter(l => l.rating !== undefined);
-  console.log(`${locationsWithRatings.length} locations have ratings`);
-  console.log("Locations with ratings:", locationsWithRatings.map(l => ({
-    id: l.id,
-    name: l.name,
-    rating: l.rating
-  })));
-  
-  // Filtered locations with ratings
-  const filteredWithRatings = filteredLocations.filter(l => l.rating !== undefined);
-  console.log(`${filteredWithRatings.length} filtered locations have ratings`);
-  
-  // Check rating filter effectiveness
-  console.log("Rating filter effectiveness:");
-  console.log("- Locations filtered out by rating:", 
-    locations.filter(l => !(minRating === 0 || 
-      (l.rating !== undefined && l.rating >= minRating))).length
-  );
-};
+  // Diagnostikos funkcija
+  const logState = () => {
+    console.log("Current state:");
+    console.log("- userPosition:", userPosition);
+    console.log("- filterRadius:", filterRadius);
+    console.log("- minRating:", minRating);
+    console.log("- showFreeOnly:", showFreeOnly);
+    console.log("- showPaidOnly:", showPaidOnly);
+    console.log("- layers:", layers.map(l => `${l.name}: ${l.isActive}`).join(", "));
+    console.log("- filteredLocations:", filteredLocations.length);
+    console.log("- total locations:", locations.length);
+    
+    // Locations with ratings
+    const locationsWithRatings = locations.filter(l => l.rating !== undefined);
+    console.log(`${locationsWithRatings.length} locations have ratings`);
+    console.log("Locations with ratings:", locationsWithRatings.map(l => ({
+      id: l.id,
+      name: l.name,
+      rating: l.rating
+    })));
+    
+    // Filtered locations with ratings
+    const filteredWithRatings = filteredLocations.filter(l => l.rating !== undefined);
+    console.log(`${filteredWithRatings.length} filtered locations have ratings`);
+    
+    // Check rating filter effectiveness
+    console.log("Rating filter effectiveness:");
+    console.log("- Locations filtered out by rating:", 
+      locations.filter(l => !(minRating === 0 || 
+        (l.rating !== undefined && l.rating >= minRating))).length
+    );
+  };
+
+  // Marker clustering implementation
+  useEffect(() => {
+    // Jei žemėlapis nepasirengęs arba nėra lokacijų, grįžti
+    if (!mapRef.current || !mapReady || filteredLocations.length === 0) return;
+    
+    console.log('Creating markers for', filteredLocations.length, 'locations');
+    
+    const map = mapRef.current;
+    
+    // Sukurti marker klasterizacijos grupę
+    // @ts-ignore -- Ignoruoti TypeScript klaidą, jei negalite rasti tinkamų tipų
+    const markers = L.markerClusterGroup({
+      maxClusterRadius: 40,         // Klasterio spindulys pikseliais
+      spiderfyOnMaxZoom: true,      // Išskleisti žymeklius max priartinime
+      showCoverageOnHover: false,   // Nerodyti apskritimų
+      zoomToBoundsOnClick: true,    // Priartinti prie klasterio paspaudus
+      disableClusteringAtZoom: 16   // Nustoti grupuoti pasiekus tam tikrą priartinimą
+    });
+    
+    // Pridėti žymeklius į klasterį
+    filteredLocations.forEach(location => {
+      const marker = L.marker([location.latitude, location.longitude], {
+        icon: getLocationIcon(location)
+      });
+      
+      // Pridėti įvykių klausytojus
+      marker.on('click', () => {
+        console.log("Marker clicked:", location.name);
+        setShowPopup(location.id);
+        // Sukurti popupą
+        const popupContent = `
+          <div class="p-1">
+            <h3 class="font-medium text-base">${location.name}</h3>
+            <div class="flex space-x-2 mt-2">
+              <button
+                class="bg-blue-500 text-white text-xs py-1 px-2 rounded hover:bg-blue-600"
+                onclick="document.dispatchEvent(new CustomEvent('openLocationDetails', {detail: {id: '${location.id}'}}));"
+              >
+                Daugiau informacijos
+              </button>
+            </div>
+          </div>
+        `;
+        marker.bindPopup(popupContent).openPopup();
+      });
+      
+      // Pridėti kontekstinio meniu įvykį
+      marker.on('contextmenu', (e: any) => {
+        handleLocationContextMenu(location, e.originalEvent);
+      });
+      
+      // Pridėti žymeklį į klasterį
+      markers.addLayer(marker);
+    });
+    
+    // Pridėti klasterį į žemėlapį
+    map.addLayer(markers);
+    
+    // Išvalyti, kai komponentas išmontuojamas
+    return () => {
+      map.removeLayer(markers);
+    };
+  }, [filteredLocations, mapRef.current, mapReady, getLocationIcon, handleLocationContextMenu]);
+
+  // Add event listener for marker interactions
+  useEffect(() => {
+    // Įvykio klausytojas popupams atidaryti
+    const handleOpenLocationDetails = (e: any) => {
+      const locationId = e.detail.id;
+      const location = locations.find(loc => loc.id === locationId);
+      if (location) {
+        handleLocationClick(location);
+      }
+    };
+    
+    document.addEventListener('openLocationDetails', handleOpenLocationDetails);
+    
+    return () => {
+      document.removeEventListener('openLocationDetails', handleOpenLocationDetails);
+    };
+  }, [locations, handleLocationClick]);
 
   return (
     <div className="h-full w-full relative">
@@ -1073,15 +1161,15 @@ const logState = () => {
       )}
       
       <MapContainer 
-  center={CENTER_POSITION} 
-  zoom={DEFAULT_ZOOM} 
-  style={{ height: 'calc(100% - 2px)', width: '100%', zIndex: 1 }}
-  zoomControl={false}
-  ref={mapRef}
-  className="z-[1]"
->
+        center={CENTER_POSITION} 
+        zoom={DEFAULT_ZOOM} 
+        style={{ height: 'calc(100% - 2px)', width: '100%', zIndex: 1 }}
+        zoomControl={false}
+        ref={mapRef}
+        className="z-[1]"
+      >
         <MapReadyDetector onMapReady={handleMapReady} />
-        
+        <MapBoundsListener onBoundsChange={handleBoundsChange} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={getTileLayerUrl()}
@@ -1090,230 +1178,107 @@ const logState = () => {
         <LocationMarker />
         <MapEventHandler />
         
-        {filteredLocations.map(location => (
-  <Marker
-    key={location.id}
-    position={[location.latitude, location.longitude]}
-    icon={getLocationIcon(location)}
-    eventHandlers={{
-      click: () => {
-        console.log("Pin clicked:", location.name);
-        if (showPopup === location.id) {
-          // Jei popup jau rodomas, atidarykime pilną detalių langą
-          handleLocationClick(location);
-        } else {
-          // Kitaip - atidarykime popup
-          setShowPopup(location.id);
-        }
-      },
-      contextmenu: (e) => handleLocationContextMenu(location, e.originalEvent as unknown as React.MouseEvent)
-    }}
-    >
-    <Popup
-      closeButton={true}
-      eventHandlers={{
-        remove: () => setShowPopup(null)
-      }}
-      className="location-popup max-w-xs md:max-w-sm"
-      autoClose={false}
-    >
-      <div className="p-1">
-                  <h3 className="font-medium text-base">
-                    {location.name}
-                    {location.categories && location.categories.includes('ad') && (
-                      <span className="ml-1 text-xs bg-purple-100 text-purple-800 px-1 py-0.5 rounded-full">
-                        Reklama
-                      </span>
-                    )}
-                  </h3>
-                  
-                  {/* Display category icons */}
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {getCategoryIcons(location)}
-                  </div>
-                  
-                  {/* Display main image if available */}
-                  {location.images && location.images.length > 0 && (
-                    <div className="mt-2">
-                      <img 
-                        src={location.images[location.main_image_index || 0]} 
-                        alt={location.name}
-                        className="w-full h-24 object-cover rounded"
-                      />
-                    </div>
-                  )}
-                  
-                  {location.rating !== undefined ? (
-  <div className="flex items-center text-yellow-500 text-sm mt-1">
-    <Star size={14} className="mr-1" />
-    {Number(location.rating).toFixed(1)}
-  </div>
-) : (
-  <div className="flex items-center text-gray-400 text-xs mt-1">
-    <Star size={14} className="mr-1" />
-    Nėra įvertinimų
-  </div>
-)}
-                  
-                  {/* Weather data if available */}
-                  {location.weather_data && (
-                    <div className="flex items-center text-sm mt-1 text-gray-600">
-                      <Thermometer size={14} className="mr-1" />
-                      {location.weather_data.temp}°C
-                    </div>
-                  )}
-                  
-                  <div className="flex space-x-2 mt-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLocationClick(location);
-                      }}
-                      className="bg-blue-500 text-white text-xs py-1 px-2 rounded hover:bg-blue-600"
-                    >
-                      Daugiau informacijos
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            ){'}'}
-          </Marker>
-        ))}
-        
+        {/* We removed the markers here since we're now using clustering */}
       </MapContainer>
-      
-      {/* Map controls - geresnis išdėstymas */}
-<div className="absolute top-4 right-4 z-[400]">
-  <MapTypeControl mapType={mapType} setMapType={setMapType} />
-</div>
 
-{/* Centravimo mygtukas tik PC režime */}
-<div className="hidden md:block absolute top-16 right-4 z-[400]">
-  <button 
-    onClick={() => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const map = mapRef.current;
-            if (map) {
-              map.setView([position.coords.latitude, position.coords.longitude], 14);
-            }
-          },
-          (error) => {
-            console.error('Geolocation error:', error);
-            // Jei nepavyksta nustatyti vietos, centruojame į Kauną
-            if (mapRef.current) {
-              mapRef.current.setView([54.8985, 23.9036], 8);
-            }
-          }
-        );
-      } else {
-        // Jei geolokacija nepasiekiama, centruojame į Kauną
-        if (mapRef.current) {
-          mapRef.current.setView([54.8985, 23.9036], 8);
-        }
-      }
-    }} 
-    className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
-    title="Centruoti žemėlapį pagal jūsų vietą"
-  >
-    <MapPin size={20} className="text-blue-500" />
-  </button>
-</div>
+      {/* Map controls */}
+      <div className="absolute top-4 right-4 z-[400]">
+        <MapTypeControl mapType={mapType} setMapType={setMapType} />
+      </div>
 
-{/* Centravimo mygtukas tik mobiliajame režime - kairėje apačioje */}
-<div className="md:hidden absolute bottom-20 left-4 z-[400]">
-  <button 
-    onClick={() => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const map = mapRef.current;
-            if (map) {
-              map.setView([position.coords.latitude, position.coords.longitude], 14);
+      {/* Centravimo mygtukas tik PC režime */}
+      <div className="hidden md:block absolute top-16 right-4 z-[400]">
+        <button 
+          onClick={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  const map = mapRef.current;
+                  if (map) {
+                    map.setView([position.coords.latitude, position.coords.longitude], 14);
+                  }
+                },
+                (error) => {
+                  console.error('Geolocation error:', error);
+                  // Jei nepavyksta nustatyti vietos, centruojame į Kauną
+                  if (mapRef.current) {
+                    mapRef.current.setView([54.8985, 23.9036], 8);
+                  }
+                }
+              );
+            } else {
+              // Jei geolokacija nepasiekiama, centruojame į Kauną
+              if (mapRef.current) {
+                mapRef.current.setView([54.8985, 23.9036], 8);
+              }
             }
-          },
-          (error) => {
-            console.error('Geolocation error:', error);
-            // Jei nepavyksta nustatyti vietos, centruojame į Kauną
-            if (mapRef.current) {
-              mapRef.current.setView([54.8985, 23.9036], 8);
-            }
-          }
-        );
-      } else {
-        // Jei geolokacija nepasiekiama, centruojame į Kauną
-        if (mapRef.current) {
-          mapRef.current.setView([54.8985, 23.9036], 8);
-        }
-      }
-    }} 
-    className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100"
-    title="Centruoti žemėlapį pagal jūsų vietą"
-  >
-    <MapPin size={24} className="text-blue-500" />
-  </button>
-</div>
+          }} 
+          className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
+          title="Centruoti žemėlapį pagal jūsų vietą"
+        >
+          <MapPin size={20} className="text-blue-500" />
+        </button>
+      </div>
 
-{/* Centravimo mygtukas tik PC režime */}
-<div className="hidden md:block absolute top-16 right-4 z-[400]">
-  <button 
-    onClick={() => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const map = mapRef.current;
-            if (map) {
-              map.setView([position.coords.latitude, position.coords.longitude], 14);
+      {/* Centravimo mygtukas tik mobiliajame režime - kairėje apačioje */}
+      <div className="md:hidden absolute bottom-20 left-4 z-[400]">
+        <button 
+          onClick={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  const map = mapRef.current;
+                  if (map) {
+                    map.setView([position.coords.latitude, position.coords.longitude], 14);
+                  }
+                },
+                (error) => {
+                  console.error('Geolocation error:', error);
+                  // Jei nepavyksta nustatyti vietos, centruojame į Kauną
+                  if (mapRef.current) {
+                    mapRef.current.setView([54.8985, 23.9036], 8);
+                  }
+                }
+              );
+            } else {
+              // Jei geolokacija nepasiekiama, centruojame į Kauną
+              if (mapRef.current) {
+                mapRef.current.setView([54.8985, 23.9036], 8);
+              }
             }
-          },
-          (error) => {
-            console.error('Geolocation error:', error);
-            // Jei nepavyksta nustatyti vietos, centruojame į Kauną
-            if (mapRef.current) {
-              mapRef.current.setView([54.8985, 23.9036], 8);
-            }
-          }
-        );
-      } else {
-        // Jei geolokacija nepasiekiama, centruojame į Kauną
-        if (mapRef.current) {
-          mapRef.current.setView([54.8985, 23.9036], 8);
-        }
-      }
-    }} 
-    className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
-    title="Centruoti žemėlapį pagal jūsų vietą"
-  >
-    <MapPin size={20} className="text-blue-500" />
-  </button>
-</div>
+          }} 
+          className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100"
+          title="Centruoti žemėlapį pagal jūsų vietą"
+        >
+          <MapPin size={24} className="text-blue-500" />
+        </button>
+      </div>
 
-{/* Filtro kontrolės tik kompiuteriams, ne mobiliems įrenginiams */}
-<div className="hidden md:block absolute bottom-4 right-4 z-[400]">
-  <FilterControls 
-    minRating={minRating}
-    setMinRating={setMinRating}
-    showFreeOnly={showFreeOnly}
-    setShowFreeOnly={setShowFreeOnly}
-    showPaidOnly={showPaidOnly}
-    setShowPaidOnly={setShowPaidOnly}
-    isFilterOpen={isFilterOpen}
-    toggleFilter={toggleFilter}
-    filterRadius={filterRadius}
-    setFilterRadius={setFilterRadius}
-  />
-  
-  {/* Diagnostikos mygtukas - tik administratoriams */}
-{userRole === 'admin' && (
-  <button 
-    onClick={logState}
-    className="mt-2 bg-gray-800 text-white px-2 py-1 text-xs rounded w-full"
-  >
-    Diagnostika
-  </button>
-)}
-</div>
+      {/* Filtro kontrolės tik kompiuteriams, ne mobiliems įrenginiams */}
+      <div className="hidden md:block absolute bottom-4 right-4 z-[400]">
+        <FilterControls 
+          minRating={minRating}
+          setMinRating={setMinRating}
+          showFreeOnly={showFreeOnly}
+          setShowFreeOnly={setShowFreeOnly}
+          showPaidOnly={showPaidOnly}
+          setShowPaidOnly={setShowPaidOnly}
+          isFilterOpen={isFilterOpen}
+          toggleFilter={toggleFilter}
+          filterRadius={filterRadius}
+          setFilterRadius={setFilterRadius}
+        />
+        
+        {/* Diagnostikos mygtukas - tik administratoriams */}
+        {userRole === 'admin' && (
+          <button 
+            onClick={logState}
+            className="mt-2 bg-gray-800 text-white px-2 py-1 text-xs rounded w-full"
+          >
+            Diagnostika
+          </button>
+        )}
+      </div>
       
       {/* Location context menu */}
       {locationContextMenu && (
@@ -1343,7 +1308,7 @@ const logState = () => {
           </div>
         </div>
       )}
-      
+
       {/* Location details modal */}
       {selectedLocation && (
         <LocationDetails 
@@ -1356,10 +1321,10 @@ const logState = () => {
       
       {/* Edit location modal */}
       {editingLocation && (
-        <EditLocationModal
+        <EditLocationModal 
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
-          onSave={handleSaveEditedLocation}
+          onSave={handleEditLocation}
           location={editingLocation}
         />
       )}
@@ -1368,3 +1333,37 @@ const logState = () => {
 };
 
 export default Map;
+
+async function fetchLocationsByBounds(
+  mapBounds: { north: number; south: number; east: number; west: number; }, 
+  userRole: string
+): Promise<Location[]> {
+  try {
+    // Start building the query
+    let query = supabase
+      .from('locations')
+      .select('*')
+      // Filter by bounds
+      .lt('latitude', mapBounds.north)
+      .gt('latitude', mapBounds.south)
+      .lt('longitude', mapBounds.east)
+      .gt('longitude', mapBounds.west);
+    
+    // If not admin or moderator, only show approved locations
+    if (userRole !== 'admin' && userRole !== 'moderator') {
+      query = query.eq('is_approved', true);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching locations by bounds:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchLocationsByBounds:', error);
+    return [];
+  }
+}
