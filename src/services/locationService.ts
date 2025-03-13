@@ -1,7 +1,308 @@
+import { Location, LocationComment, LocationRating, UserRole } from '../types';
 import { supabase } from '../lib/supabase';
-import { Location, LocationCategory, UserRole } from '../types';
 
-// Fetch locations
+/**
+ * Create a new location
+ * @param locationData - The location data to create
+ * @param userId - The user ID creating the location
+ */
+export const createLocation = async (locationData: Partial<Location>, userId: string): Promise<Location> => {
+  try {
+    // Set default values for new location
+    const newLocation = {
+      ...locationData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user_id: userId,
+      is_approved: false, // New locations need approval by default
+      rating: 0,
+      ratings_count: 0
+    };
+    
+    const { data, error } = await supabase
+      .from('locations')
+      .insert([newLocation])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return data as Location;
+  } catch (error) {
+    console.error('Error creating location:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing location
+ * @param locationId - The ID of the location to update
+ * @param locationData - The location data to update
+ * @param userId - The user ID updating the location
+ * @param userRole - The role of the user making the update
+ */
+export const updateLocation = async (
+  locationId: string, 
+  locationData: Partial<Location>, 
+  userId: string,
+  userRole: string
+): Promise<Location> => {
+  try {
+    // Check permissions - only creators, admins, and moderators can edit
+    if (userRole !== 'admin' && userRole !== 'moderator') {
+      const { data: existingLocation, error: fetchError } = await supabase
+        .from('locations')
+        .select('user_id')
+        .eq('id', locationId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      if (existingLocation.user_id !== userId) {
+        throw new Error('You do not have permission to edit this location');
+      }
+    }
+    
+    // Update location
+    const { data, error } = await supabase
+      .from('locations')
+      .update({
+        ...locationData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', locationId)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return data as Location;
+  } catch (error) {
+    console.error('Error updating location:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a location
+ * @param locationId - The ID of the location to delete
+ * @param userId - The user ID deleting the location 
+ * @param userRole - The role of the user making the deletion
+ */
+export const deleteLocation = async (
+  locationId: string, 
+  userId: string,
+  userRole: string
+): Promise<void> => {
+  try {
+    // Check permissions - only creators, admins, and moderators can delete
+    if (userRole !== 'admin' && userRole !== 'moderator') {
+      const { data: existingLocation, error: fetchError } = await supabase
+        .from('locations')
+        .select('user_id')
+        .eq('id', locationId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      if (existingLocation.user_id !== userId) {
+        throw new Error('You do not have permission to delete this location');
+      }
+    }
+    
+    // Delete location
+    const { error } = await supabase
+      .from('locations')
+      .delete()
+      .eq('id', locationId);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting location:', error);
+    throw error;
+  }
+};
+
+/**
+ * Approve a location
+ * @param locationId - The ID of the location to approve
+ * @param userRole - The role of the user approving the location
+ */
+export const approveLocation = async (locationId: string, userRole: string): Promise<void> => {
+  try {
+    // Only admins and moderators can approve locations
+    if (userRole !== 'admin' && userRole !== 'moderator') {
+      throw new Error('You do not have permission to approve locations');
+    }
+    
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_approved: true })
+      .eq('id', locationId);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error approving location:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch comments for a location
+ * @param locationId - The location ID to fetch comments for
+ */
+export const fetchLocationComments = async (locationId: string): Promise<LocationComment[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('location_comments')
+      .select('*')
+      .eq('location_id', locationId)
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    
+    return data as LocationComment[];
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add a comment to a location
+ * @param locationId - The location ID to add comment to
+ * @param userId - The user ID adding the comment
+ * @param content - The comment text
+ * @param images - Optional array of image URLs
+ */
+export const addLocationComment = async (
+  locationId: string, 
+  userId: string, 
+  content: string,
+  images: string[] = []
+): Promise<LocationComment> => {
+  try {
+    const { data, error } = await supabase
+      .from('location_comments')
+      .insert([
+        {
+          location_id: locationId,
+          user_id: userId,
+          content,
+          images,
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return data as LocationComment;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch ratings for a location
+ * @param locationId - The location ID to fetch ratings for
+ */
+export const fetchLocationRatings = async (locationId: string): Promise<LocationRating[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('location_ratings')
+      .select('*')
+      .eq('location_id', locationId)
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    
+    return data as LocationRating[];
+  } catch (error) {
+    console.error('Error fetching ratings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Rate a location
+ * @param locationId - The location ID to rate
+ * @param userId - The user ID adding the rating
+ * @param rating - The rating value (1-5)
+ * @param review - Optional review text
+ */
+export const rateLocation = async (
+  locationId: string, 
+  userId: string, 
+  rating: number,
+  review: string = ''
+): Promise<LocationRating> => {
+  try {
+    // Check if user already rated this location
+    const { data: existingRating, error: fetchError } = await supabase
+      .from('location_ratings')
+      .select('*')
+      .eq('location_id', locationId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (fetchError) throw fetchError;
+    
+    let result;
+    
+    if (existingRating) {
+      // Update existing rating
+      const { data, error } = await supabase
+        .from('location_ratings')
+        .update({
+          rating,
+          review,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingRating.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      result = data;
+    } else {
+      // Insert new rating
+      const { data, error } = await supabase
+        .from('location_ratings')
+        .insert([
+          {
+            location_id: locationId,
+            user_id: userId,
+            rating,
+            review,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      result = data;
+    }
+    
+    // Update location average rating
+    await updateLocationAverageRating(locationId);
+    
+    return result as LocationRating;
+  } catch (error) {
+    console.error('Error rating location:', error);
+    throw error;
+  }
+};
+
+// Function moved to avoid duplication - implementation is at the bottom of the file
+
+/**
+ * Fetch locations with optional filters
+ * @param userRole - The user's role for permission checks
+ */
 export const fetchLocations = async (userRole: UserRole) => {
   try {
     // Fetch all locations - we want everyone to see all locations
@@ -34,7 +335,11 @@ export const fetchLocations = async (userRole: UserRole) => {
   }
 };
 
-// Add new location
+/**
+ * Add new location to database
+ * @param locationData - The location data to add
+ * @param userRole - User role to determine if location is auto-approved
+ */
 export const addLocation = async (locationData: any, userRole: UserRole) => {
   try {
     // Ensure locationData has valid structure
@@ -43,7 +348,9 @@ export const addLocation = async (locationData: any, userRole: UserRole) => {
       categories: Array.isArray(locationData.categories) ? locationData.categories : [],
       images: Array.isArray(locationData.images) ? locationData.images : [],
       created_by: (await supabase.auth.getUser()).data.user?.id,
-      is_approved: userRole === 'admin' || userRole === 'moderator' // Auto-approve for admins and moderators
+      is_approved: userRole === 'admin' || userRole === 'moderator', // Auto-approve for admins and moderators
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     const { data, error } = await supabase
@@ -60,8 +367,11 @@ export const addLocation = async (locationData: any, userRole: UserRole) => {
   }
 };
 
-// Update location
-export const updateLocation = async (location: Location) => {
+/**
+ * Update location in database
+ * @param location - The location data to update
+ */
+export const updateLocationDetails = async (location: Location) => {
   try {
     const { error } = await supabase
       .from('locations')
@@ -73,6 +383,7 @@ export const updateLocation = async (location: Location) => {
         categories: Array.isArray(location.categories) ? location.categories : [],
         is_public: location.is_public,
         is_paid: location.is_paid,
+        images: location.images,
         main_image_index: location.main_image_index,
         updated_at: new Date().toISOString()
       })
@@ -87,8 +398,11 @@ export const updateLocation = async (location: Location) => {
   }
 };
 
-// Delete location
-export const deleteLocation = async (locationId: string) => {
+/**
+ * Delete location from database
+ * @param locationId - The ID of the location to delete
+ */
+export const removeLocation = async (locationId: string) => {
   try {
     const { error } = await supabase
       .from('locations')
@@ -104,8 +418,11 @@ export const deleteLocation = async (locationId: string) => {
   }
 };
 
-// Approve location
-export const approveLocation = async (locationId: string) => {
+/**
+ * Approve location in database
+ * @param locationId - The ID of the location to approve
+ */
+export const approveLocationById = async (locationId: string) => {
   try {
     const { error } = await supabase
       .from('locations')
@@ -121,8 +438,11 @@ export const approveLocation = async (locationId: string) => {
   }
 };
 
-// Fetch location comments
-export const fetchLocationComments = async (locationId: string) => {
+/**
+ * Fetch comments for a location (alternative implementation)
+ * @param locationId - The location ID to fetch comments for
+ */
+export const getLocationComments = async (locationId: string) => {
   try {
     const { data, error } = await supabase
       .from('location_comments')
@@ -139,8 +459,13 @@ export const fetchLocationComments = async (locationId: string) => {
   }
 };
 
-// Add location comment
-export const addLocationComment = async (locationId: string, content: string, userId: string) => {
+/**
+ * Add a comment to a location (simplified version)
+ * @param locationId - The location ID to add comment to
+ * @param content - The comment content
+ * @param userId - The user ID adding the comment
+ */
+export const addSimpleLocationComment = async (locationId: string, content: string, userId: string) => {
   try {
     const { error } = await supabase
       .from('location_comments')
@@ -149,7 +474,8 @@ export const addLocationComment = async (locationId: string, content: string, us
           location_id: locationId,
           user_id: userId,
           content,
-          images: []
+          images: [],
+          created_at: new Date().toISOString()
         }
       ]);
       
@@ -162,8 +488,11 @@ export const addLocationComment = async (locationId: string, content: string, us
   }
 };
 
-// Fetch location ratings
-export const fetchLocationRatings = async (locationId: string) => {
+/**
+ * Fetch ratings for a location (alternative implementation)
+ * @param locationId - The location ID to fetch ratings for
+ */
+export const getLocationRatings = async (locationId: string) => {
   try {
     const { data, error } = await supabase
       .from('location_ratings')
@@ -179,8 +508,14 @@ export const fetchLocationRatings = async (locationId: string) => {
   }
 };
 
-// Add or update location rating
-export const rateLocation = async (locationId: string, userId: string, rating: number, review?: string) => {
+/**
+ * Rate a location or update an existing rating
+ * @param locationId - The location ID to rate
+ * @param userId - The user ID giving the rating
+ * @param rating - The rating value (1-5)
+ * @param review - Optional review text
+ */
+export const updateLocationRating = async (locationId: string, userId: string, rating: number, review?: string) => {
   try {
     // Check if user has already rated this location
     const { data: existingRating, error: checkError } = await supabase
@@ -188,9 +523,9 @@ export const rateLocation = async (locationId: string, userId: string, rating: n
       .select('id')
       .eq('location_id', locationId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
       
-    if (checkError && !checkError.message.includes('No rows found')) {
+    if (checkError && !checkError.message?.includes('No rows found')) {
       throw checkError;
     }
     
@@ -200,7 +535,8 @@ export const rateLocation = async (locationId: string, userId: string, rating: n
         .from('location_ratings')
         .update({
           rating,
-          review
+          review,
+          updated_at: new Date().toISOString()
         })
         .eq('id', existingRating.id);
         
@@ -214,12 +550,16 @@ export const rateLocation = async (locationId: string, userId: string, rating: n
             location_id: locationId,
             user_id: userId,
             rating,
-            review
+            review,
+            created_at: new Date().toISOString()
           }
         ]);
         
       if (error) throw error;
     }
+    
+    // Update location average rating
+    await updateLocationAverageRating(locationId);
     
     return true;
   } catch (error) {
@@ -228,7 +568,46 @@ export const rateLocation = async (locationId: string, userId: string, rating: n
   }
 };
 
-// Fetch locations by map bounds
+/**
+ * Update the average rating for a location
+ * @param locationId - The location ID to update rating for
+ */
+const updateLocationAverageRating = async (locationId: string): Promise<void> => {
+  try {
+    // Get all ratings for this location
+    const { data: ratings, error } = await supabase
+      .from('location_ratings')
+      .select('rating')
+      .eq('location_id', locationId);
+    
+    if (error) throw error;
+    
+    // Calculate average
+    const avgRating = ratings && ratings.length > 0
+      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+      : 0;
+    
+    // Update location
+    const { error: updateError } = await supabase
+      .from('locations')
+      .update({
+        rating: avgRating,
+        ratings_count: ratings ? ratings.length : 0
+      })
+      .eq('id', locationId);
+      
+    if (updateError) throw updateError;
+  } catch (error) {
+    console.error('Error updating location average rating:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch locations by map bounds
+ * @param bounds - The map bounds to fetch locations within
+ * @param userRole - User role to filter locations by approval status
+ */
 export const fetchLocationsByBounds = async (
   bounds: { north: number; south: number; east: number; west: number },
   userRole: UserRole
@@ -236,37 +615,20 @@ export const fetchLocationsByBounds = async (
   try {
     console.log('Fetching locations by bounds:', bounds);
     
-    // Sukurkite Supabase užklausą su geografiniais filtrais
+    // Create Supabase query with geographic filters
     let query = supabase.from('locations')
-      .select(`
-        id,
-        name,
-        description,
-        latitude,
-        longitude,
-        categories,
-        is_public,
-        is_paid,
-        images,
-        main_image_index,
-        created_at,
-        updated_at,
-        created_by,
-        rating,
-        is_approved,
-        weather_data
-      `)
-      .gte('latitude', bounds.south)  // Platuma didesnė arba lygi pietinei ribai
-      .lte('latitude', bounds.north)  // Platuma mažesnė arba lygi šiaurinei ribai
-      .gte('longitude', bounds.west)  // Ilguma didesnė arba lygi vakarinei ribai
-      .lte('longitude', bounds.east); // Ilguma mažesnė arba lygi rytinei ribai
+      .select('*')
+      .gte('latitude', bounds.south)  // Latitude greater than or equal to south bound
+      .lte('latitude', bounds.north)  // Latitude less than or equal to north bound
+      .gte('longitude', bounds.west)  // Longitude greater than or equal to west bound
+      .lte('longitude', bounds.east); // Longitude less than or equal to east bound
     
-    // Jei ne admin arba moderator, rodyti tik patvirtintas vietas
+    // If not admin or moderator, only show approved locations
     if (userRole !== 'admin' && userRole !== 'moderator') {
       query = query.eq('is_approved', true);
     }
     
-    // Nustatyti limitą, kad užklausa būtų efektyvesnė
+    // Set limit for efficiency
     query = query.limit(200);
     
     const { data, error } = await query;
@@ -283,7 +645,9 @@ export const fetchLocationsByBounds = async (
   }
 };
 
-// Generate mock locations for fallback
+/**
+ * Generate mock locations for fallback
+ */
 export const generateMockLocations = (): Location[] => {
   return [
     {
@@ -360,3 +724,6 @@ export const generateMockLocations = (): Location[] => {
     }
   ];
 };
+
+// Export aliases for backward compatibility
+// export const removeLocationAlias = deleteLocation; // Use this if you need an alias
