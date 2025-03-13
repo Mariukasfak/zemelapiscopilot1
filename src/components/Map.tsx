@@ -1105,11 +1105,17 @@ const Map: React.FC = () => {
     // Pridėti žymeklius į klasterį
     filteredLocations.forEach(location => {
       const marker = L.marker([location.latitude, location.longitude], {
-        icon: getLocationIcon(location)
+        icon: getLocationIcon(location),
+        interactive: true,  // Užtikrina, kad žymeklis tikrai reaguotų į paspaudimus
+        bubblingMouseEvents: false  // Sustabdo mouse įvykių burbulėjimą
       });
       
       // Pridėti įvykių klausytojus
-      marker.on('click', () => {
+      marker.on('click', (e) => {
+        // Apsaugome, kad įvykis nesitęstų į kitus elementus
+        L.DomEvent.stopPropagation(e);
+        L.DomEvent.preventDefault(e.originalEvent);
+        
         console.log("Marker clicked:", location.name);
         setShowPopup(location.id);
         
@@ -1148,7 +1154,12 @@ const Map: React.FC = () => {
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
           ${Number(location.rating).toFixed(1)}
         </div>
-      ` : ''}
+      ` : `
+        <div class="flex items-center text-gray-400 text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          Nėra įvertinimų
+        </div>
+      `}
     </div>
     
     <div class="flex flex-wrap gap-1 mb-2">
@@ -1480,9 +1491,50 @@ async function fetchLocationsByBounds(
       return [];
     }
     
-    return data || [];
+    // Atnaujinama - naudojame helper funkciją, kad gautume ir priskirtume reitingus
+    return await updateLocationsWithRatings(data || []);
   } catch (error) {
     console.error('Error in fetchLocationsByBounds:', error);
     return [];
+  }
+}
+
+// Helper function to get ratings and update locations
+async function updateLocationsWithRatings(locations: Location[]): Promise<Location[]> {
+  try {
+    // Get all ratings
+    const { data: ratings, error } = await supabase
+      .from('location_ratings')
+      .select('*');
+      
+    if (error) throw error;
+    
+    // Calculate average ratings for each location
+    const locationRatings: Record<string, number[]> = {};
+    if (ratings) {
+      ratings.forEach(rating => {
+        if (!locationRatings[rating.location_id]) {
+          locationRatings[rating.location_id] = [];
+        }
+        locationRatings[rating.location_id].push(rating.rating);
+      });
+    }
+    
+    // Update locations with calculated average ratings
+    return locations.map(location => {
+      const ratingsForLocation = locationRatings[location.id] || [];
+      const avgRating = ratingsForLocation.length > 0 
+        ? Number((ratingsForLocation.reduce((sum, r) => sum + r, 0) / ratingsForLocation.length).toFixed(1))
+        : undefined;
+      
+      return {
+        ...location,
+        rating: avgRating,
+        ratings_count: ratingsForLocation.length
+      };
+    });
+  } catch (error) {
+    console.error('Error updating locations with ratings:', error);
+    return locations;
   }
 }
