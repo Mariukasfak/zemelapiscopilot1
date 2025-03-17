@@ -1,0 +1,32 @@
+.popup-container {
+  max-width: 250px;
+  padding: 5px;
+}
+
+.popup-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.popup-container h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+.popup-container p {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.popup-container a {
+  color: #0078A8;
+  text-decoration: none;
+}
+
+.popup-container a:hover {
+  text-decoration: underline;
+}
