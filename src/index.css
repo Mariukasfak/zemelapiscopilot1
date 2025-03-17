@@ -257,12 +257,12 @@
 
 .leaflet-popup-modern .leaflet-popup-content {
   margin: 0;
-  width: 280px !important;
+  width: 200px !important; /* Sumažinta iš 280px į 200px */
 }
 
 .leaflet-popup-modern .leaflet-popup-close-button {
-  top: 8px;
-  right: 8px;
+  top: 5px;
+  right: 5px;
   color: white;
   text-shadow: 0 0 3px rgba(0,0,0,0.5);
 }

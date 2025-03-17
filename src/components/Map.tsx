@@ -1093,13 +1093,13 @@ const Map: React.FC = () => {
     const map = mapRef.current;
     
     // Sukurti marker klasterizacijos grupę
-    // @ts-ignore -- Ignoruoti TypeScript klaidą, jei negalite rasti tinkamų tipų
+    // @ts-ignore -- Ignoruoti TypeScript klaidą
     const markers = L.markerClusterGroup({
-      maxClusterRadius: 40,         // Klasterio spindulys pikseliais
-      spiderfyOnMaxZoom: true,      // Išskleisti žymeklius max priartinime
-      showCoverageOnHover: false,   // Nerodyti apskritimų
-      zoomToBoundsOnClick: true,    // Priartinti prie klasterio paspaudus
-      disableClusteringAtZoom: 16   // Nustoti grupuoti pasiekus tam tikrą priartinimą
+      maxClusterRadius: 40,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 16
     });
     
     // Pridėti žymeklius į klasterį
@@ -1113,87 +1113,103 @@ const Map: React.FC = () => {
         bubblingMouseEvents: false
       });
       
-      // Create popup content with correct rating display
-      const popupContent = `
-<div class="p-0 leaflet-popup-modern">
-  <div class="relative h-48 bg-gray-100">
-    ${location.images && location.images.length > 0 ? `
-      <img 
-        src="${location.images[location.main_image_index || 0]}" 
-        alt="${location.name}"
-        class="w-full h-full object-cover"
-      />
-      ${location.is_paid ? `
-        <div class="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-md font-medium">
-          Mokama
-        </div>
-      ` : ''}
-      ${location.categories && location.categories.includes('ad') ? `
-        <div class="absolute top-2 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-md font-medium animate-pulse">
-          Reklama
-        </div>
-      ` : ''}
-    ` : `
-      <div class="w-full h-full flex items-center justify-center text-gray-400">
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-      </div>
-    `}
-  </div>
-  
-  <div class="p-3">
-    <div class="flex justify-between items-start mb-2">
-      <h3 class="font-medium text-lg leading-tight">${location.name}</h3>
-      ${typeof location.rating === 'number' && location.rating > 0 ? `
-        <div class="flex items-center text-amber-500 font-medium">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          ${location.rating.toFixed(1)}
-        </div>
-      ` : `
-        <div class="flex items-center text-gray-400 text-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          Nėra įvertinimų
-        </div>
-      `}
-    </div>
-    
-    <div class="flex flex-wrap gap-1 mb-2">
-      ${(location.categories || []).map(category => `
-        <span class="inline-flex items-center text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700">
-          ${getCategoryEmoji(category)} ${category}
-        </span>
-      `).join('')}
-    </div>
-    
-    ${location.weather_data ? `
-      <div class="bg-blue-50 rounded-md p-2 mb-2 flex justify-between">
-        <div class="text-center">
-          <div class="text-xl font-semibold text-blue-700">${location.weather_data.temp}°C</div>
-          <div class="text-xs text-blue-600">${location.weather_data.description}</div>
-        </div>
-        <div class="flex flex-col text-xs text-blue-700">
-          <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.94"/></svg>
-            ${location.weather_data.humidity}%
-          </div>
-          <div class="flex items-center mt-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
-            ${location.weather_data.windSpeed} m/s
-          </div>
-        </div>
-      </div>
-    ` : ''}
-    
-    <button
-      onclick="document.dispatchEvent(new CustomEvent('openLocationDetails', {detail: {id: '${location.id}'}}));"
-      class="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded-md transition-colors flex items-center justify-center"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      Daugiau informacijos
-    </button>
-  </div>
-</div>
-`;
-
+      // Sukuriame popupo turinį
+      let popupContent = '<div class="p-0 leaflet-popup-modern">';
+      
+      // Viršutinė dalis su nuotrauka
+      popupContent += '<div class="relative h-32 bg-gray-100">';
+      
+      if (location.images && location.images.length > 0) {
+        // Nuotrauka
+        popupContent += '<img src="' + location.images[location.main_image_index || 0] + 
+                        '" alt="' + location.name + '" class="w-full h-full object-cover" />';
+        
+        // Mokama žymė
+        if (location.is_paid) {
+          popupContent += '<div class="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-md font-medium">' +
+                          'Mokama</div>';
+        }
+        
+        // Reklama žymė
+        if (location.categories && location.categories.includes('ad')) {
+          popupContent += '<div class="absolute top-2 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-md font-medium animate-pulse">' +
+                          'Reklama</div>';
+        }
+      } else {
+        // Jei nėra nuotraukos, rodome vietovės ikoną
+        popupContent += '<div class="w-full h-full flex items-center justify-center text-gray-400">' +
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" ' +
+                        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>' +
+                        '<circle cx="12" cy="10" r="3"/></svg></div>';
+      }
+      
+      // Pavadinimas
+      popupContent += '<h3 class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent text-white p-2 text-sm font-medium">' +
+                      location.name + '</h3>';
+      
+      popupContent += '</div>'; // Baigiame viršutinę dalį
+      
+      // Apatinė dalis su informacija ir mygtuku
+      popupContent += '<div class="p-2">';
+      
+      // Kategorijos
+      popupContent += '<div class="flex flex-wrap gap-1 mb-2">';
+      if (location.categories && location.categories.length > 0) {
+        location.categories.forEach(category => {
+          popupContent += '<span class="inline-flex items-center text-xs px-1 py-0.5 rounded-full bg-blue-50 text-blue-700">' +
+                        getCategoryEmoji(category) + ' ' + category + '</span>';
+        });
+      }
+      popupContent += '</div>';
+      
+      // Reitingas
+      if ((location.rating !== undefined && location.rating > 0) || 
+          (location.ratings_count && location.ratings_count > 0)) {
+        popupContent += '<div class="flex items-center text-yellow-500 text-sm mb-2">' +
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" ' +
+                        'stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mr-1">' +
+                        '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>' +
+                        (location.rating !== undefined ? Number(location.rating).toFixed(1) : '0') +
+                        (location.ratings_count ? ' (' + location.ratings_count + ')' : '') +
+                        '</div>';
+      } else {
+        popupContent += '<div class="flex items-center text-gray-400 text-xs mb-2">' +
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" ' +
+                        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">' +
+                        '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>' +
+                        'Nėra įvertinimų</div>';
+      }
+      
+      // Orai
+      if (location.weather_data) {
+        popupContent += '<div class="bg-blue-50 rounded-md p-1 mb-1 flex justify-between">' +
+                        '<div class="text-center"><div class="text-md font-semibold text-blue-700">' +
+                        location.weather_data.temp + '°C</div></div>' +
+                        '<div class="flex flex-col text-xs text-blue-700">' +
+                        '<div class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" ' +
+                        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">' +
+                        '<path d="M12 3v16M4 13h16"></path></svg>' +
+                        location.weather_data.humidity + '%</div>' +
+                        '<div class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" ' +
+                        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">' +
+                        '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>' +
+                        location.weather_data.windSpeed + ' m/s</div></div></div>';
+      }
+      
+      // Mygtukas
+      popupContent += '<button ' +
+                      'onclick="document.dispatchEvent(new CustomEvent(\'openLocationDetails\', {detail: {id: \'' + location.id + '\'}}));" ' +
+                      'class="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded-md transition-colors flex items-center justify-center">' +
+                      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" ' +
+                      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">' +
+                      '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' +
+                      '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
+                      'Daugiau informacijos</button>';
+      
+      popupContent += '</div>'; // Baigiame apatinę dalį
+      popupContent += '</div>'; // Baigiame visą popupą
+      
       // Create popup with prepared content
       const popup = L.popup({
         offset: [0, -5],
@@ -1212,8 +1228,8 @@ const Map: React.FC = () => {
         // Prevent event propagation
         L.DomEvent.stopPropagation(e);
         L.DomEvent.preventDefault(e.originalEvent);
-        
         console.log("Marker clicked:", location.name);
+        
         setShowPopup(location.id);
         
         // Simply open the popup that's already bound
@@ -1236,7 +1252,7 @@ const Map: React.FC = () => {
     return () => {
       map.removeLayer(markers);
     };
-  }, [filteredLocations, mapRef.current, mapReady, getLocationIcon, handleLocationContextMenu, layers]);
+  }, [filteredLocations, mapReady, getLocationIcon, handleLocationContextMenu, layers]);
 
   // Funkcija, kuri grąžina HTML kodo string su kategorijų ikonoms
   const getCategoryIconsHtml = (location: Location): string => {
@@ -1252,7 +1268,6 @@ const Map: React.FC = () => {
       
       const color = layer.color;
       let iconSvg = '';
-      
       switch (category) {
         case 'fishing':
           iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.5a9 9 0 1 0-9 9 9 9 0 0 0 9-9Z"/><path d="M13 16.5a4 4 0 1 0-4 4 4 4 0 0 0 4-4Z"/><path d="M3 9.5V4.25C3 3.56 3.56 3 4.25 3h4.5C9.44 3 10 3.56 10 4.25V8"/><path d="m7 15 3-3"/><path d="M19.5 8.5c.5-1 .5-2 .5-3 0-2.5-2-3-3-3s-2.5.5-3 3c0 1 0 2 .5 3"/><path d="M17 5.5v3"/></svg>';
@@ -1296,7 +1311,6 @@ const Map: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
-      
       <MapContainer 
         center={CENTER_POSITION} 
         zoom={DEFAULT_ZOOM} 
@@ -1311,18 +1325,16 @@ const Map: React.FC = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={getTileLayerUrl()}
         />
-        
         <LocationMarker />
         <MapEventHandler />
-        
         {/* We removed the markers here since we're now using clustering */}
       </MapContainer>
-
+      
       {/* Map controls */}
       <div className="absolute top-4 right-4 z-[400]">
         <MapTypeControl mapType={mapType} setMapType={setMapType} />
       </div>
-
+      
       {/* Centravimo mygtukas tik PC režime */}
       <div className="hidden md:block absolute top-16 right-4 z-[400]">
         <button 
@@ -1356,7 +1368,7 @@ const Map: React.FC = () => {
           <MapPin size={20} className="text-blue-500" />
         </button>
       </div>
-
+      
       {/* Centravimo mygtukas tik mobiliajame režime - kairėje apačioje */}
       <div className="md:hidden absolute bottom-20 left-4 z-[400]">
         <button 
@@ -1390,7 +1402,7 @@ const Map: React.FC = () => {
           <MapPin size={24} className="text-blue-500" />
         </button>
       </div>
-
+      
       {/* Filtro kontrolės tik kompiuteriams, ne mobiliems įrenginiams */}
       <div className="hidden md:block absolute bottom-4 right-4 z-[400]">
         <FilterControls 
@@ -1423,7 +1435,7 @@ const Map: React.FC = () => {
           className="fixed bg-white rounded-md shadow-lg z-[1000] overflow-hidden"
           style={{ 
             left: `${locationContextMenu.x}px`, 
-            top: `${locationContextMenu.y}px`,
+            top: `${locationContextMenu.y}px`, 
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -1445,7 +1457,7 @@ const Map: React.FC = () => {
           </div>
         </div>
       )}
-
+      
       {/* Location details modal */}
       {selectedLocation && (
         <LocationDetails 
@@ -1535,7 +1547,6 @@ async function updateLocationsWithRatings(locations: Location[]): Promise<Locati
     const updatedLocations = locations.map(location => {
       const ratingsForLocation = locationRatings[location.id] || [];
       let avgRating = undefined;
-      
       if (ratingsForLocation.length > 0) {
         // Calculate average and ensure it's a number
         const sum = ratingsForLocation.reduce((acc, r) => acc + r, 0);
