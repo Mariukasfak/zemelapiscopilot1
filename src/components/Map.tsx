@@ -88,6 +88,40 @@ const MapBoundsListener: React.FC<{ onBoundsChange: (bounds: any) => void }> = (
   return null;
 };
 
+// Initial position component to set map center on user's location when the map loads
+const InitialPositionSetter = () => {
+  const map = useMap();
+  
+  const getUserLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          map.setView([latitude, longitude], 15);
+          
+          // Dispatch event for other components
+          document.dispatchEvent(new CustomEvent('userPositionChanged', {
+            detail: {
+              position: [latitude, longitude],
+              accuracy: position.coords.accuracy
+            }
+          }));
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          // Keep default center if error occurs
+        }
+      );
+    }
+  }, [map]);
+  
+  useEffect(() => {
+    getUserLocation();
+  }, [getUserLocation]);
+  
+  return null;
+};
+
 const Map: React.FC = () => {
   const { userRole } = useAuth();
   const { layers, closeContextMenu } = useMapContext();
@@ -118,8 +152,34 @@ const Map: React.FC = () => {
   } | null>(null);
   const [filterRadius, setFilterRadius] = useState<number>(0);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [initialCenter, setInitialCenter] = useState<[number, number]>(CENTER_POSITION);
+  const [initialZoom, setInitialZoom] = useState<number>(DEFAULT_ZOOM);
   
   const mapRef = useRef<L.Map | null>(null);
+
+  // Try to get user location when component mounts
+  const getUserLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      console.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setInitialCenter([latitude, longitude]);
+        setInitialZoom(15);
+      },
+      (error) => {
+        console.error("Error getting user location:", error);
+        // Keep default center if error occurs
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    getUserLocation();
+  }, [getUserLocation]);
 
   // Handle map bounds changes
   const handleBoundsChange = useCallback((bounds: any) => {
@@ -366,8 +426,8 @@ const Map: React.FC = () => {
       )}
       
       <MapContainer 
-        center={CENTER_POSITION} 
-        zoom={DEFAULT_ZOOM} 
+        center={initialCenter}
+        zoom={initialZoom}
         style={{ height: 'calc(100% - 2px)', width: '100%', zIndex: 1 }}
         zoomControl={false}
         ref={mapRef}
@@ -375,6 +435,7 @@ const Map: React.FC = () => {
       >
         <MapReadyDetector onMapReady={handleMapReady} />
         <MapBoundsListener onBoundsChange={handleBoundsChange} />
+        <InitialPositionSetter />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={getTileLayerUrl()}
