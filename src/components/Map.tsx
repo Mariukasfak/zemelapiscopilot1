@@ -97,15 +97,23 @@ const InitialPositionSetter = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          map.setView([latitude, longitude], 15);
           
-          // Dispatch event for other components
-          document.dispatchEvent(new CustomEvent('userPositionChanged', {
-            detail: {
-              position: [latitude, longitude],
-              accuracy: position.coords.accuracy
+          // Add validation before setting view
+          if (map && !isNaN(latitude) && !isNaN(longitude)) {
+            try {
+              map.setView([latitude, longitude], 15, { animate: true });
+              
+              // Dispatch event for other components
+              document.dispatchEvent(new CustomEvent('userPositionChanged', {
+                detail: {
+                  position: [latitude, longitude],
+                  accuracy: position.coords.accuracy
+                }
+              }));
+            } catch (error) {
+              console.error("Error setting map view:", error);
             }
-          }));
+          }
         },
         (error) => {
           console.error("Geolocation error:", error);
@@ -152,10 +160,38 @@ const Map: React.FC = () => {
   } | null>(null);
   const [filterRadius, setFilterRadius] = useState<number>(0);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  
+  // Use a VERY explicit type for initialCenter
   const [initialCenter, setInitialCenter] = useState<[number, number]>(CENTER_POSITION);
   const [initialZoom, setInitialZoom] = useState<number>(DEFAULT_ZOOM);
   
   const mapRef = useRef<L.Map | null>(null);
+
+  // Strict coordinate validation function
+  const validateCoordinates = (lat: any, lng: any): [number, number] | null => {
+    if (
+      typeof lat === 'number' && 
+      typeof lng === 'number' && 
+      !isNaN(lat) && 
+      !isNaN(lng) && 
+      isFinite(lat) && 
+      isFinite(lng) &&
+      lat >= -90 && lat <= 90 && 
+      lng >= -180 && lng <= 180
+    ) {
+      return [lat, lng];
+    }
+    console.error("Invalid coordinates:", lat, lng);
+    return null; // Return null if invalid
+  };
+
+  // Validate initialCenter and initialZoom
+  useEffect(() => {
+    if (typeof initialZoom !== 'number' || isNaN(initialZoom) || initialZoom < 1 || initialZoom > 20) {
+      console.error("Invalid initialZoom:", initialZoom);
+      setInitialZoom(DEFAULT_ZOOM);
+    }
+  }, [initialZoom]);
 
   // Try to get user location when component mounts
   const getUserLocation = useCallback(async () => {
@@ -164,27 +200,46 @@ const Map: React.FC = () => {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setInitialCenter([latitude, longitude]);
-        setInitialZoom(15);
-      },
-      (error) => {
-        console.error("Error getting user location:", error);
-        // Keep default center if error occurs
-      }
-    );
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Use the validation function:
+          const validCoords = validateCoordinates(latitude, longitude);
+          if (validCoords) {
+            setInitialCenter(validCoords); // Only pass valid coordinates
+            setInitialZoom(15);
+          }
+          // If validCoords is null, do nothing (keep the default Kaunas coordinates)
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+          // Keep default center if error occurs
+        }
+      );
+    } catch (error) {
+      console.error("Exception in getUserLocation:", error);
+    }
   }, []);
 
   useEffect(() => {
     getUserLocation();
   }, [getUserLocation]);
 
-  // Handle map bounds changes
+  // Handle map bounds changes with validation
   const handleBoundsChange = useCallback((bounds: any) => {
-    setMapBounds(bounds);
+    if (bounds && 
+        typeof bounds === 'object' && 
+        'north' in bounds && 'south' in bounds && 
+        'east' in bounds && 'west' in bounds) {
+      setMapBounds(bounds);
+    } else {
+      console.error("Invalid bounds received:", bounds);
+    }
   }, []);
+  
+  // Removed handleMapInit as it's not used
   
   // Fetch locations when map bounds change
   useEffect(() => {
@@ -197,9 +252,15 @@ const Map: React.FC = () => {
   // Listen for map centering events
   useEffect(() => {
     const handleMapCenter = (event: any) => {
-      const { lat, lng, zoom } = event.detail;
-      if (mapRef.current) {
-        mapRef.current.setView([lat, lng], zoom);
+      try {
+        const { lat, lng, zoom } = event.detail;
+        if (mapRef.current && !isNaN(lat) && !isNaN(lng) && !isNaN(zoom)) {
+          mapRef.current.setView([lat, lng], zoom, { animate: true });
+        } else {
+          console.error("Invalid map center parameters:", event.detail);
+        }
+      } catch (error) {
+        console.error("Error in handleMapCenter:", error);
       }
     };
 
@@ -210,8 +271,20 @@ const Map: React.FC = () => {
   // Listen for user position changes
   useEffect(() => {
     const handleUserPositionChanged = (event: any) => {
-      const { position } = event.detail;
-      setUserPosition(position);
+      try {
+        const { position } = event.detail;
+        if (position && 
+            Array.isArray(position) && 
+            position.length === 2 && 
+            !isNaN(position[0]) && 
+            !isNaN(position[1])) {
+          setUserPosition(position);
+        } else {
+          console.error("Invalid position received:", position);
+        }
+      } catch (error) {
+        console.error("Error in handleUserPositionChanged:", error);
+      }
     };
 
     document.addEventListener('userPositionChanged', handleUserPositionChanged);
@@ -269,28 +342,62 @@ const Map: React.FC = () => {
     return () => document.removeEventListener('openLocationDetails', handleOpenLocationDetails);
   }, [locations]);
 
-  // Function to center map on user's position
+  // Function to center map on user's position - improved to prevent infinite tile loading
   const centerMapOnUser = useCallback((zoom: number = 14) => {
-    if (userPosition && mapRef.current) {
-      mapRef.current.setView(userPosition, zoom);
-    } else if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          if (mapRef.current) {
-            mapRef.current.setView([latitude, longitude], zoom);
-          }
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          alert('Nepavyko nustatyti jūsų buvimo vietos. Patikrinkite lokacijos leidimus.');
+    try {
+      if (userPosition && mapRef.current) {
+        // Use the validation function here too
+        const validCoords = validateCoordinates(userPosition[0], userPosition[1]);
+        if (!validCoords) {
+          console.error("Invalid userPosition coordinates:", userPosition);
+          return;
         }
-      );
+        
+        mapRef.current.setView(validCoords, zoom, {
+          animate: true,
+          duration: 1 // Limit animation duration to 1 second
+        });
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            
+            const validCoords = validateCoordinates(latitude, longitude);
+            if (!validCoords) {
+              console.error("Invalid coordinates from geolocation:", latitude, longitude);
+              return;
+            }
+            
+            if (mapRef.current) {
+              mapRef.current.setView(validCoords, zoom, {
+                animate: true,
+                duration: 1 // Limit animation duration to 1 second
+              });
+              
+              // Update user position state
+              setUserPosition(validCoords);
+            }
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            alert('Nepavyko nustatyti jūsų buvimo vietos. Patikrinkite lokacijos leidimus.');
+          },
+          { timeout: 10000 } // 10 second timeout
+        );
+      }
+    } catch (error) {
+      console.error("Error in centerMapOnUser:", error);
     }
   }, [userPosition]);
 
   // Calculate distance between two points in kilometers
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    // Add validation for coordinates
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+      console.error("Invalid coordinates in calculateDistance:", lat1, lon1, lat2, lon2);
+      return Infinity; // Return a large distance to filter out invalid points
+    }
+
     const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -308,6 +415,9 @@ const Map: React.FC = () => {
     const result = locations.filter(location => {
       // Safety check for null location objects
       if (!location || !location.latitude || !location.longitude) return false;
+      
+      // Additional validation for coordinates
+      if (isNaN(location.latitude) || isNaN(location.longitude)) return false;
       
       // If location.categories doesn't exist, use empty array
       const categories = location.categories || [];
@@ -410,10 +520,14 @@ const Map: React.FC = () => {
     console.log("- layers:", layers.map(l => `${l.name}: ${l.isActive}`).join(", "));
     console.log("- filteredLocations:", filteredLocations.length);
     console.log("- total locations:", locations.length);
-  }, [userPosition, filterRadius, minRating, showFreeOnly, showPaidOnly, layers, filteredLocations, locations]);
+    console.log("- mapRef exists:", !!mapRef.current);
+    console.log("- initialCenter:", initialCenter);
+    console.log("- initialZoom:", initialZoom);
+  }, [userPosition, filterRadius, minRating, showFreeOnly, showPaidOnly, layers, filteredLocations, locations, initialCenter, initialZoom]);
 
   // Handle map ready event
   const handleMapReady = useCallback(() => {
+    console.log("Map ready");
     setMapReady(true);
   }, []);
 
@@ -430,8 +544,14 @@ const Map: React.FC = () => {
         zoom={initialZoom}
         style={{ height: 'calc(100% - 2px)', width: '100%', zIndex: 1 }}
         zoomControl={false}
-        ref={mapRef}
+        ref={(map: L.Map) => { 
+          if (map) {
+            mapRef.current = map;
+          }
+        }}
         className="z-[1]"
+        whenReady={() => handleMapReady()}
+        maxBoundsViscosity={1.0}
       >
         <MapReadyDetector onMapReady={handleMapReady} />
         <MapBoundsListener onBoundsChange={handleBoundsChange} />
