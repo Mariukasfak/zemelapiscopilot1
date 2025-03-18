@@ -278,7 +278,13 @@ const Map: React.FC = () => {
             position.length === 2 && 
             !isNaN(position[0]) && 
             !isNaN(position[1])) {
-          setUserPosition(position);
+          // Use validateCoordinates to ensure proper typing
+          const validCoords = validateCoordinates(position[0], position[1]);
+          if (validCoords) {
+            setUserPosition(validCoords);
+          } else {
+            console.error("Invalid position coordinates:", position);
+          }
         } else {
           console.error("Invalid position received:", position);
         }
@@ -544,13 +550,14 @@ const Map: React.FC = () => {
         zoom={initialZoom}
         style={{ height: 'calc(100% - 2px)', width: '100%', zIndex: 1 }}
         zoomControl={false}
-        ref={(map: L.Map) => { 
+        ref={(map) => { 
           if (map) {
             mapRef.current = map;
           }
         }}
         className="z-[1]"
-        whenReady={() => handleMapReady()}
+        // Use regular whenReady instead of eventHandlers
+        whenReady={handleMapReady}
         maxBoundsViscosity={1.0}
       >
         <MapReadyDetector onMapReady={handleMapReady} />

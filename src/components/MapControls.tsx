@@ -236,6 +236,13 @@ const MapControls: React.FC<MapControlsProps> = ({
   userRole,
   logState
 }) => {
+  // Ensure onCenterMap is called safely
+  const handleCenterMap = () => {
+    if (typeof onCenterMap === 'function') {
+      onCenterMap();
+    }
+  };
+
   return (
     <>
       {/* Map type control - top right */}
@@ -246,7 +253,7 @@ const MapControls: React.FC<MapControlsProps> = ({
       {/* Center button - desktop only */}
       <div className="hidden md:block absolute top-16 right-4 z-[400]">
         <button 
-          onClick={onCenterMap} 
+          onClick={handleCenterMap}
           className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
           title="Centruoti žemėlapį pagal jūsų vietą"
         >
@@ -257,7 +264,7 @@ const MapControls: React.FC<MapControlsProps> = ({
       {/* Center button - mobile only */}
       <div className="md:hidden absolute bottom-20 left-4 z-[400]">
         <button 
-          onClick={onCenterMap}
+          onClick={handleCenterMap}
           className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100"
           title="Centruoti žemėlapį pagal jūsų vietą"
         >
