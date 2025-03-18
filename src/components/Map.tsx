@@ -15,6 +15,7 @@ import MarkersLayer from './MarkersLayer';
 import MapControls from './MapControls';
 import LocationDetails from './LocationDetails';
 import EditLocationModal from './EditLocationModal';
+import Search from './Search';
 
 // Context
 import { useMap as useMapContext } from '../context/MapContext';
@@ -544,6 +545,11 @@ const Map: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
+      
+      {/* Add search component */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[450] w-5/6 md:w-96">
+        <Search onResultClick={handleLocationClick} />
+      </div>
       
       <MapContainer 
         center={initialCenter}

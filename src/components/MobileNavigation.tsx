@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layers, X, Filter, MapPin, Menu, Settings, Plus, User, LogOut, Home, Heart, Bell, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useMap } from '../context/MapContext';
+import Search from './Search';
 
 const MobileNavigation: React.FC = () => {
   const { isAuthenticated, userRole, login, logout, user } = useAuth();
@@ -71,7 +72,9 @@ const toggleCategoryLayers = (categoryKey: string, active: boolean) => {
     <Menu size={24} />
   </button>
   
-  <h1 className="text-lg font-semibold">LT Žemėlapis</h1>
+  <div className="flex-1 mx-2">
+    <Search />
+  </div>
   
   <div className="flex">
     <button 
