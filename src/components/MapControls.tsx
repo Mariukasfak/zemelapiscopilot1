@@ -112,7 +112,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
           <h3 className="font-medium text-sm">Filtrai</h3>
           <button 
             onClick={toggleFilter}
-            className="md:hidden text-gray-500"
+            className="lg:hidden text-gray-500"
           >
             <Sliders size={16} />
           </button>
@@ -245,57 +245,54 @@ const MapControls: React.FC<MapControlsProps> = ({
 
   return (
     <>
-      {/* Map type control - top right */}
-      <div className="absolute top-4 right-4 z-[400]">
-        <MapTypeControl mapType={mapType} setMapType={setMapType} />
+      {/* Mobili versija */}
+      <div className="xl:hidden">
+        {/* Mobilūs kontrolės elementai */}
       </div>
       
-      {/* Center button - desktop only */}
-      <div className="hidden md:block absolute top-16 right-4 z-[400]">
-        <button 
-          onClick={handleCenterMap}
-          className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
-          title="Centruoti žemėlapį pagal jūsų vietą"
-        >
-          <MapPin size={20} className="text-blue-500" />
-        </button>
-      </div>
-      
-      {/* Center button - mobile only */}
-      <div className="md:hidden absolute bottom-20 left-4 z-[400]">
-        <button 
-          onClick={handleCenterMap}
-          className="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100"
-          title="Centruoti žemėlapį pagal jūsų vietą"
-        >
-          <MapPin size={24} className="text-blue-500" />
-        </button>
-      </div>
-      
-      {/* Filter controls - desktop only */}
-      <div className="hidden md:block absolute bottom-4 right-4 z-[400]">
-        <FilterControls 
-          minRating={minRating}
-          setMinRating={setMinRating}
-          showFreeOnly={showFreeOnly}
-          setShowFreeOnly={setShowFreeOnly}
-          showPaidOnly={showPaidOnly}
-          setShowPaidOnly={setShowPaidOnly}
-          isFilterOpen={isFilterOpen}
-          toggleFilter={toggleFilter}
-          filterRadius={filterRadius}
-          setFilterRadius={setFilterRadius}
-        />
+      {/* PC versija */}
+      <div className="hidden xl:block">
+        {/* Map type control - top right */}
+        <div className="absolute top-4 right-4 z-[400]">
+          <MapTypeControl mapType={mapType} setMapType={setMapType} />
+        </div>
         
-        {/* Debug button - admin only */}
-        {userRole === 'admin' && logState && (
+        {/* Center button - desktop only */}
+        <div className="absolute top-16 right-4 z-[400]">
           <button 
-            onClick={logState}
-            className="mt-2 bg-gray-800 text-white px-2 py-1 text-xs rounded w-full"
+            onClick={handleCenterMap}
+            className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
+            title="Centruoti žemėlapį pagal jūsų vietą"
           >
-            Diagnostika
+            <MapPin size={20} className="text-blue-500" />
           </button>
-        )}
+        </div>
+        
+        {/* Filter controls - desktop only */}
+        <div className="absolute bottom-4 right-4 z-[400]">
+          <FilterControls 
+            minRating={minRating}
+            setMinRating={setMinRating}
+            showFreeOnly={showFreeOnly}
+            setShowFreeOnly={setShowFreeOnly}
+            showPaidOnly={showPaidOnly}
+            setShowPaidOnly={setShowPaidOnly}
+            isFilterOpen={isFilterOpen}
+            toggleFilter={toggleFilter}
+            filterRadius={filterRadius}
+            setFilterRadius={setFilterRadius}
+          />
+          
+          {/* Debug button - admin only */}
+          {userRole === 'admin' && logState && (
+            <button 
+              onClick={logState}
+              className="mt-2 bg-gray-800 text-white px-2 py-1 text-xs rounded w-full"
+            >
+              Diagnostika
+            </button>
+          )}
+        </div>
       </div>
     </>
   );
