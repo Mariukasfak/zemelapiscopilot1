@@ -21,6 +21,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, userId }) =>
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setImgSrc(reader.result as string);
+        // Iškart nustatome cropMode true
         setCropMode(true);
         setError(null);
       });
@@ -94,15 +95,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, userId }) =>
   return (
     <div className="image-upload-container">
       {!imgSrc ? (
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center p-2 bg-blue-500 text-white rounded-md flex-1"
-            disabled={loading}
-          >
-            <Upload size={16} className="mr-2" />
-            Įkelti nuotrauką
-          </button>
+        <div className="flex flex-col items-center space-y-2">
           <input
             type="file"
             accept="image/*"
@@ -110,6 +103,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, userId }) =>
             ref={fileInputRef}
             className="hidden"
           />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center p-3 bg-blue-500 text-white rounded-md w-full"
+            disabled={loading}
+          >
+            <Upload size={18} className="mr-2" />
+            Pasirinkti nuotrauką iš įrenginio
+          </button>
         </div>
       ) : cropMode ? (
         <AdvancedImageCropper
@@ -138,13 +139,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, userId }) =>
             />
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 mt-2">
             <button
-              onClick={() => setCropMode(true)}
+              onClick={cancelUpload}
               className="px-3 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
               disabled={loading}
             >
-              Apkarpyti
+              Pasirinkti kitą
             </button>
             <button 
               onClick={handleImageUpload} 

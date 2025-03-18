@@ -289,7 +289,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
                 className="flex-1 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md w-full"
               >
                 <Upload size={16} className="mr-2" />
-                {showImageUploader ? 'Atšaukti' : 'Įkelti nuotrauką'}
+                {showImageUploader ? 'Uždaryti įkėlimą' : 'Pridėti naują nuotrauką'}
               </button>
             </div>
             

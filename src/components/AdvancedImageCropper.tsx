@@ -298,12 +298,13 @@ const AdvancedImageCropper: React.FC<AdvancedImageCropperProps> = ({
       </div>
       
       {/* Proporcijų mygtukai */}
-      <div className="mb-2 flex items-center space-x-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium">Proporcijos:</span>
         <button 
           onClick={() => applyAspectRatio(1)} 
           className={`px-2 py-1 text-xs rounded ${aspectRatio === 1 ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
         >
-          1:1
+          Kvadratas (1:1)
         </button>
         <button 
           onClick={() => applyAspectRatio(4/3)} 
@@ -312,23 +313,10 @@ const AdvancedImageCropper: React.FC<AdvancedImageCropperProps> = ({
           4:3
         </button>
         <button 
-          onClick={() => applyAspectRatio(16/9)} 
-          className={`px-2 py-1 text-xs rounded ${aspectRatio === 16/9 ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-        >
-          16:9
-        </button>
-        <button 
           onClick={() => applyAspectRatio(null)} 
           className={`px-2 py-1 text-xs rounded ${aspectRatio === null ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
         >
           Laisvas
-        </button>
-        <button
-          onClick={() => setAspectRatioLocked(!aspectRatioLocked)}
-          className={`px-2 py-1 text-xs rounded flex items-center ${aspectRatioLocked ? 'bg-green-500 text-white' : 'bg-gray-100'}`}
-        >
-          {aspectRatioLocked ? <Lock size={12} className="mr-1" /> : <Unlock size={12} className="mr-1" />}
-          {aspectRatioLocked ? 'Atrakinti' : 'Užrakinti'}
         </button>
       </div>
       
@@ -430,7 +418,7 @@ const AdvancedImageCropper: React.FC<AdvancedImageCropperProps> = ({
           onClick={applyCrop}
           className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
-          Apkarpyti
+          Pritaikyti ir tęsti
         </button>
       </div>
     </div>
