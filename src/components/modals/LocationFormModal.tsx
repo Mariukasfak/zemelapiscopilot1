@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { Location, LocationCategory } from '../../types';
+import ImageUpload from '../ImageUpload';
+import { supabase } from '../../lib/supabase';
 
 interface LocationFormModalProps {
   isOpen: boolean;
@@ -31,22 +33,8 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   const [images, setImages] = useState<string[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [imageDropdownOpen, setImageDropdownOpen] = useState(false);
-
-  // Category options
-  const categoryOptions = [
-    { value: 'fishing', label: 'Žvejyba' },
-    { value: 'swimming', label: 'Maudymasis' },
-    { value: 'camping', label: 'Stovyklavietė' },
-    { value: 'rental', label: 'Nuoma' },
-    { value: 'paid', label: 'Mokama zona' },
-    { value: 'private', label: 'Privati teritorija' },
-    { value: 'bonfire', label: 'Laužavietė' },
-    { value: 'playground', label: 'Vaikų žaidimų aikštelė' },
-    { value: 'picnic', label: 'Pikniko vieta' },
-    { value: 'campsite', label: 'Kempingas' },
-    { value: 'extreme', label: 'Ekstremalaus sporto vieta' },
-    { value: 'ad', label: 'Reklama' }
-  ];
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [userId, setUserId] = useState<string>('anonymous');
 
   // Initialize form with location data when editing
   useEffect(() => {
@@ -64,10 +52,20 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       setLatitude(currentPosition[0]);
       setLongitude(currentPosition[1]);
     }
+
+    // Get current user ID
+    const getUserId = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        setUserId(data.session.user.id);
+      }
+    };
+
+    getUserId();
   }, [isEditing, location, currentPosition, isOpen]);
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Basic validation
@@ -76,30 +74,35 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
       return;
     }
 
-    // Create the location object
-    const locationData = {
-      name: name.trim(),
-      description: description.trim(),
-      latitude,
-      longitude,
-      categories,
-      is_public: isPublic,
-      is_paid: isPaid,
-      images,
-      main_image_index: mainImageIndex
-    };
+    try {
+      // Create the location object
+      const locationData = {
+        name: name.trim(),
+        description: description.trim(),
+        latitude,
+        longitude,
+        categories,
+        is_public: isPublic,
+        is_paid: isPaid,
+        images,
+        main_image_index: mainImageIndex
+      };
 
-    // If editing, preserve the ID and other fields
-    if (isEditing && location) {
-      onSave({
-        ...location,
-        ...locationData
-      });
-    } else {
-      onSave(locationData);
+      // If editing, preserve the ID and other fields
+      if (isEditing && location) {
+        onSave({
+          ...location,
+          ...locationData
+        });
+      } else {
+        onSave(locationData);
+      }
+
+      onClose();
+    } catch (error) {
+      console.error("Error saving location:", error);
+      alert('Nepavyko išsaugoti vietos. Bandykite dar kartą.');
     }
-
-    onClose();
   };
 
   // Handle category selection
@@ -125,6 +128,14 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
     setImageUrl('');
   };
 
+  // Handle adding image from uploaded one
+  const handleAddUploadedImage = (imageUrl: string) => {
+    if (imageUrl) {
+      setImages([...images, imageUrl]);
+      setShowImageUpload(false);
+    }
+  };
+
   // Handle removing an image
   const handleRemoveImage = (index: number) => {
     const newImages = [...images];
@@ -143,6 +154,22 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  // Category options
+  const categoryOptions = [
+    { value: 'fishing', label: 'Žvejyba' },
+    { value: 'swimming', label: 'Maudymasis' },
+    { value: 'camping', label: 'Stovyklavietė' },
+    { value: 'rental', label: 'Nuoma' },
+    { value: 'paid', label: 'Mokama zona' },
+    { value: 'private', label: 'Privati teritorija' },
+    { value: 'bonfire', label: 'Laužavietė' },
+    { value: 'playground', label: 'Vaikų žaidimų aikštelė' },
+    { value: 'picnic', label: 'Pikniko vieta' },
+    { value: 'campsite', label: 'Kempingas' },
+    { value: 'extreme', label: 'Ekstremalaus sporto vieta' },
+    { value: 'ad', label: 'Reklama' }
+  ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -352,6 +379,32 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            
+            {/* Advanced image upload */}
+            <div className="mb-2">
+              <button 
+                type="button"
+                onClick={() => setShowImageUpload(!showImageUpload)}
+                className="text-blue-500 flex items-center text-sm"
+              >
+                {showImageUpload ? "Slėpti nuotraukos įkėlimą" : "Įkelti / Fotografuoti"} 
+                <ChevronDown
+                  size={16}
+                  className={`ml-1 transition-transform ${
+                    showImageUpload ? "transform rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </div>
+            
+            {showImageUpload && (
+              <div className="mb-4 p-3 border rounded-md bg-gray-50">
+                <ImageUpload 
+                  onImageUploaded={handleAddUploadedImage} 
+                  userId={userId}
+                />
               </div>
             )}
           </div>
