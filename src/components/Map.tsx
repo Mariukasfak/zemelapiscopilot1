@@ -546,8 +546,8 @@ const Map: React.FC = () => {
         </div>
       )}
       
-      {/* Add search component */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[450] w-5/6 md:w-96">
+      {/* Add search component with responsive visibility */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[450] w-5/6 md:w-96 hidden md:block">
         <Search onResultClick={handleLocationClick} />
       </div>
       
