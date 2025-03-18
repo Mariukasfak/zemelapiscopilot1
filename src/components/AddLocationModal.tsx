@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Upload, Star } from 'lucide-react';
 import { LocationCategory } from '../types';
 import { supabase } from '../lib/supabase';
-import ImageUpload from './ImageUpload';
+import OneStepImageUploader from './OneStepImageUploader';
+import SimpleImageUploader from './SimpleImageUploader';
 
 interface AddLocationModalProps {
   isOpen: boolean;
@@ -316,7 +317,7 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({
               </button>
             </div>
             
-            {/* Upload button */}
+            {/* Vieno žingsnio nuotraukos įkėlimas */}
             <div className="mb-2">
               <button
                 type="button"
@@ -327,11 +328,20 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({
                 {showImageUploader ? 'Uždaryti įkėlimą' : 'Pridėti naują nuotrauką'}
               </button>
             </div>
-            
+
             {/* Image uploader */}
             {showImageUploader && (
               <div className="mb-4">
-                <ImageUpload onImageUploaded={handleImageUploaded} userId={user?.id} />
+                <SimpleImageUploader
+                  onImageUploaded={(url) => {
+                    console.log("Gauta nuotrauka:", url);
+                    // Labai svarbu sukurti naują masyvą
+                    const updatedImages = [...images, url];
+                    setImages(updatedImages);
+                    setShowImageUploader(false);
+                  }}
+                  userId={user?.id}
+                />
               </div>
             )}
             

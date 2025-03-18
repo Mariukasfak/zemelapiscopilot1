@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Upload, Star } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Upload } from 'lucide-react';
 import { Location, LocationCategory } from '../types';
 import { supabase } from '../lib/supabase';
-import ImageUpload from './ImageUpload';
+import SimpleImageUploader from './SimpleImageUploader';
 
 interface EditLocationModalProps {
   isOpen: boolean;
@@ -25,15 +25,19 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
   const [categories, setCategories] = useState<LocationCategory[]>(location.categories);
   const [isPublic, setIsPublic] = useState(location.is_public);
   const [isPaid, setIsPaid] = useState(location.is_paid);
-  const [images, setImages] = useState<string[]>(location.images || []);
+  const [images, setImages] = useState<string[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState(location.main_image_index || 0);
+  
+  // Pridedame forceRenderKey, kad priverstume perpiešti kai kurių komponentų atvaizdavimą
+  const [forceRenderKey, setForceRenderKey] = useState<number>(Date.now());
+  const forceUpdate = useCallback(() => setForceRenderKey(Date.now()), []);
   
   // Image upload state
   const [imageUrl, setImageUrl] = useState('');
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [user, setUser] = useState<any>(null);
   
-  // Reset form when location changes
+  // Reset form and images when location changes
   useEffect(() => {
     if (location) {
       setName(location.name);
@@ -43,10 +47,19 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
       setCategories(location.categories);
       setIsPublic(location.is_public);
       setIsPaid(location.is_paid);
-      setImages(location.images || []);
+      
+      // Saugiai kopijuojame nuotraukų masyvą
+      const locationImages = Array.isArray(location.images) ? [...location.images] : [];
+      setImages(locationImages);
+      
       setMainImageIndex(location.main_image_index || 0);
+
+      // Forsuojame perpiešimą
+      setTimeout(() => {
+        forceUpdate();
+      }, 100);
     }
-  }, [location]);
+  }, [location, forceUpdate]);
 
   // Get current user
   useEffect(() => {
@@ -77,25 +90,35 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Užtikriname, kad images yra saugus masyvas
+    const safeImages = [...images];
+    
+    console.log("Submitting images:", safeImages);
+    
     if (!name || !latitude || !longitude) {
       alert('Prašome užpildyti visus privalomus laukus');
       return;
     }
     
-    onSave({
-      ...location,
-      name,
-      description,
-      latitude,
-      longitude,
-      categories,
-      is_public: isPublic,
-      is_paid: isPaid,
-      images,
-      main_image_index: mainImageIndex
-    });
-    
-    onClose();
+    try {
+      onSave({
+        ...location,
+        name,
+        description,
+        latitude,
+        longitude,
+        categories,
+        is_public: isPublic,
+        is_paid: isPaid,
+        images: safeImages,
+        main_image_index: mainImageIndex < 0 || mainImageIndex >= safeImages.length ? 0 : mainImageIndex
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error saving location:", error);
+      alert("Nepavyko išsaugoti pakeitimų");
+    }
   };
   
   // Handle category selection
@@ -116,31 +139,70 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
       return;
     }
     
-    setImages([...images, imageUrl]);
+    // Sukuriame naują masyvą su pridėta nuotrauka
+    const updatedImages = [...images, imageUrl];
+    setImages(updatedImages);
     setImageUrl('');
+    
+    // Priverstinai atnaujiname UI
+    forceUpdate();
+    
+    console.log("URL added to images:", updatedImages);
   };
   
-  // Handle image upload completion
-  const handleImageUploaded = (imageUrl: string) => {
-    setImages([...images, imageUrl]);
+  // Handle image upload completion - supaprastinta
+  const handleImageUploaded = useCallback((imageUrl: string) => {
+    console.log("Gauta nuotrauka:", imageUrl);
+    
+    setImages(prevImages => {
+      const newImages = [...prevImages, imageUrl];
+      console.log("Images state updated:", newImages);
+      return newImages;
+    });
+    
     setShowImageUploader(false);
-  };
+    
+    // Priverstinai atnaujiname UI po trumpo delsimo
+    setTimeout(() => {
+      forceUpdate();
+    }, 50);
+  }, [forceUpdate]);
   
   // Handle removing image
-  const handleRemoveImage = (url: string) => {
-    const newImages = images.filter(image => image !== url);
-    setImages(newImages);
+  const handleRemoveImage = useCallback((urlToRemove: string) => {
+    console.log("Removing image:", urlToRemove);
     
-    // Update main image index if needed
-    if (mainImageIndex >= newImages.length && newImages.length > 0) {
-      setMainImageIndex(0);
-    }
-  };
+    setImages(prevImages => {
+      const filteredImages = prevImages.filter(url => url !== urlToRemove);
+      
+      // Atnaujiname pagrindinės nuotraukos indeksą, jei reikia
+      if (mainImageIndex >= filteredImages.length) {
+        setMainImageIndex(Math.max(0, filteredImages.length - 1));
+      }
+      
+      console.log("Images after removal:", filteredImages);
+      return filteredImages;
+    });
+    
+    // Priverstinai atnaujiname UI
+    forceUpdate();
+  }, [mainImageIndex, forceUpdate]);
   
   // Handle setting main image
-  const handleSetMainImage = (index: number) => {
+  const handleSetMainImage = useCallback((index: number) => {
+    console.log("Setting main image index:", index);
     setMainImageIndex(index);
-  };
+  }, []);
+  
+  // Pridedame debuginimo useEffect
+  useEffect(() => {
+    console.log("Images state updated:", images);
+  }, [images]);
+
+  // Logging for render key
+  useEffect(() => {
+    console.log("Component re-rendered with key:", forceRenderKey);
+  }, [forceRenderKey]);
   
   if (!isOpen) return null;
   
@@ -281,7 +343,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
               </button>
             </div>
             
-            {/* Upload button */}
+            {/* Nuotraukos įkėlimo mygtukas */}
             <div className="mb-2">
               <button
                 type="button"
@@ -292,46 +354,70 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
                 {showImageUploader ? 'Uždaryti įkėlimą' : 'Pridėti naują nuotrauką'}
               </button>
             </div>
-            
+
             {/* Image uploader */}
             {showImageUploader && (
               <div className="mb-4">
-                <ImageUpload onImageUploaded={handleImageUploaded} userId={user?.id} />
+                <SimpleImageUploader
+                  onImageUploaded={handleImageUploaded}
+                  userId={user?.id}
+                />
               </div>
             )}
             
-            {/* Image gallery */}
-            {images.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Pasirinkite pagrindinę nuotrauką:</p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {images.map((url, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={url}
-                        alt={`Nuotrauka ${index + 1}`}
-                        className={`w-full h-24 object-cover rounded ${mainImageIndex === index ? 'ring-2 ring-blue-500' : ''}`}
-                        onClick={() => handleSetMainImage(index)}
-                      />
-                      <div className="absolute top-1 right-1 flex space-x-1">
-                        {mainImageIndex === index && (
-                          <div className="bg-blue-500 text-white rounded-full p-1">
-                            <Star size={14} />
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(url)}
-                          className="bg-red-500 text-white rounded-full p-1"
+            {/* Image gallery - patobulinta versija */}
+            <div className="image-gallery" key={`gallery-${forceRenderKey}`}>
+              {Array.isArray(images) && images.length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">
+                    Pasirinkite pagrindinę nuotrauką. Viso: {images.length}
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {images.map((url, index) => {
+                      // Patikriname, ar URL yra galiojantis
+                      const safeUrl = typeof url === 'string' ? url : '';
+                      
+                      // Sukuriame unikalų raktą iš URL galo arba indekso
+                      const uniqueKey = safeUrl 
+                        ? `img-${index}-${safeUrl.substring(Math.max(0, safeUrl.length - 20))}`
+                        : `img-${index}-${forceRenderKey}`;
+                      
+                      return (
+                        <div 
+                          key={uniqueKey} 
+                          className="relative border rounded-md overflow-hidden"
                         >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                          <img
+                            src={safeUrl}
+                            alt={`Nuotrauka ${index + 1}`}
+                            className={`w-full h-24 object-cover ${mainImageIndex === index ? 'ring-2 ring-blue-500' : ''}`}
+                            onClick={() => handleSetMainImage(index)}
+                          />
+                          <div className="absolute top-1 right-1 flex space-x-1">
+                            {mainImageIndex === index && (
+                              <div className="bg-blue-500 text-white rounded-full p-1">
+                                <span aria-hidden="true">★</span>
+                                <span className="sr-only">Pagrindinė nuotrauka</span>
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(safeUrl)}
+                              className="bg-red-500 text-white rounded-full p-1"
+                              aria-label="Pašalinti nuotrauką"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-gray-500 italic">Nėra pridėtų nuotraukų</p>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2">

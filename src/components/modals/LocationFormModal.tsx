@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { Location, LocationCategory } from '../../types';
-import ImageUpload from '../ImageUpload';
+import OneStepImageUploader from '../OneStepImageUploader';
 import { supabase } from '../../lib/supabase';
+import SimpleImageUploader from '../SimpleImageUploader';
 
 interface LocationFormModalProps {
   isOpen: boolean;
@@ -382,7 +383,7 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
               </div>
             )}
             
-            {/* Advanced image upload */}
+            {/* Nuotraukos įkėlimo mygtukas */}
             <div className="mb-2">
               <button 
                 type="button"
@@ -398,11 +399,18 @@ const LocationFormModal: React.FC<LocationFormModalProps> = ({
                 />
               </button>
             </div>
-            
+
+            {/* Vieno žingsnio nuotraukos įkėlimas */}
             {showImageUpload && (
               <div className="mb-4 p-3 border rounded-md bg-gray-50">
-                <ImageUpload 
-                  onImageUploaded={handleAddUploadedImage} 
+                <SimpleImageUploader
+                  onImageUploaded={(url) => {
+                    console.log("Gauta nuotrauka:", url);
+                    // Sukuriame naują masyvą
+                    const updatedImages = [...images, url];
+                    setImages(updatedImages);
+                    setShowImageUpload(false);
+                  }}
                   userId={userId}
                 />
               </div>
