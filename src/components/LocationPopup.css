@@ -1,32 +1,36 @@
 .popup-container {
   max-width: 250px;
   padding: 5px;
+  color: var(--text-color);
 }
 
 .popup-image {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
-  margin-top: 8px;
+  margin: 8px 0;
+  border: 1px solid var(--border-color);
 }
 
 .popup-container h3 {
   margin-top: 0;
   margin-bottom: 8px;
   font-size: 16px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .popup-container p {
   margin-bottom: 8px;
   font-size: 14px;
+  color: var(--text-color);
 }
 
 .popup-container a {
-  color: #0078A8;
+  color: var(--link-color);
   text-decoration: none;
 }
 
 .popup-container a:hover {
+  color: var(--button-hover-bg-color);
   text-decoration: underline;
 }

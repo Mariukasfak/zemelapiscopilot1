@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { MapProvider } from './context/MapContext';
 import { supabase } from './lib/supabase';
 import MobileNavigation from './components/MobileNavigation';
+import ThemeToggle from './components/ThemeToggle';
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);

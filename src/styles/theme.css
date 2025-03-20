@@ -1,0 +1,96 @@
+:root {
+  /* Šviesios temos kintamieji */
+  --background-color: #fff; /* Balta */
+  --text-color: #333;      /* Tamsiai pilka */
+  --link-color: #007bff;   /* Mėlyna (Bootstrap) */
+  --border-color: #ddd;    /* Šviesiai pilka */
+  --button-bg-color: #007bff; /* Melyna */
+  --button-text-color: #fff;  /* Balta */
+  --button-hover-bg-color: #0056b3; /* Tamsesnė mėlyna (hover) */
+  --map-background-color: #f8f9fa; /* Šviesiai pilka (žemėlapio fonui)*/
+}
+
+/* Tamsios temos kintamieji (perrašome, kai prefers-color-scheme: dark) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #212529; /* Tamsiai pilka (Bootstrap dark)*/
+    --text-color: #f8f9fa;      /* Šviesiai pilka (Bootstrap) */
+    --link-color: #4db8ff;   /* Šviesesnė mėlyna */
+    --border-color: #444;    /* Tamsesnė pilka */
+    --button-bg-color: #4db8ff;
+    --button-text-color: #212529;
+    --button-hover-bg-color: #3a97d9; /* Šviesesnė mėlyna (hover)*/
+    --map-background-color: #343a40;  /* Tamsi pilka (žemėlapiui)*/
+  }
+}
+
+/* Rankinio perjungimo klasė */
+.dark-theme {
+  --background-color: #212529; /* Tamsiai pilka (Bootstrap dark)*/
+  --text-color: #f8f9fa;      /* Šviesiai pilka (Bootstrap) */
+  --link-color: #4db8ff;   /* Šviesesnė mėlyna */
+  --border-color: #444;    /* Tamsesnė pilka */
+  --button-bg-color: #4db8ff;
+  --button-text-color: #212529;
+  --button-hover-bg-color: #3a97d9; /* Šviesesnė mėlyna (hover)*/
+  --map-background-color: #343a40;
+}
+
+/* Bendri stiliai (naudojant kintamuosius) */
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: sans-serif; /* Pavyzdys */
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none; /* Pašalina pabraukimą */
+}
+
+a:hover {
+  color: var(--button-hover-bg-color); /* Naudoju tą patį kaip mygtukams */
+  text-decoration: underline;
+}
+
+/* Mygtukų stiliai */
+.btn-primary {
+  background-color: var(--button-bg-color);
+  color: var(--button-text-color);
+  border-color: var(--button-bg-color);
+}
+
+.btn-primary:hover {
+  background-color: var(--button-hover-bg-color);
+  border-color: var(--button-hover-bg-color);
+}
+
+.btn-outline-secondary {
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--border-color);
+  color: var(--button-text-color);
+}
+
+/* Žemėlapio stilius */
+.leaflet-container {
+  background-color: var(--map-background-color) !important;
+}
+
+/* Popup stiliai */
+.leaflet-popup-content-wrapper {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.leaflet-popup-tip {
+  background-color: var(--background-color);
+}
+
+/* Kiti elementai */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-color);
+}
