@@ -11,7 +11,7 @@ import 'leaflet.markercluster';
 // Custom hooks & components
 import { useLocations } from '../hooks/useLocations';
 import LocationMarker from './LocationMarker';
-import MarkersLayer from './MarkersLayer';
+import MapMarkerManager from './map/MapMarkerManager';
 import MapControls from './MapControls';
 import LocationDetails from './LocationDetails';
 import EditLocationModal from './EditLocationModal';
@@ -576,12 +576,12 @@ const Map: React.FC = () => {
         <LocationMarker />
         <MapEventHandler />
 
-        {/* Use MarkersLayer component instead of inline marker rendering */}
-        <MarkersLayer 
+        {/* Pakeičiame MarkersLayer į MapMarkerManager */}
+        <MapMarkerManager 
           locations={filteredLocations}
           layers={layers}
-          onMarkerClick={handleLocationClick}
-          onMarkerContextMenu={handleLocationContextMenu}
+          onLocationClick={handleLocationClick}
+          onLocationContextMenu={handleLocationContextMenu}
         />
       </MapContainer>
       
