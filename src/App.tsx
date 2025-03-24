@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Map from './components/Map';
 import Sidebar from './components/Sidebar';
 import ContextMenu from './components/layout/ContextMenu';
@@ -7,7 +7,6 @@ import { AuthProvider } from './context/AuthContext';
 import { MapProvider } from './context/MapContext';
 import { supabase } from './lib/supabase';
 import MobileNavigation from './components/MobileNavigation';
-import ThemeToggle from './components/ThemeToggle';
 
 function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
