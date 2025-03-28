@@ -373,6 +373,11 @@ export const addLocation = async (locationData: any, userRole: UserRole) => {
  */
 export const updateLocationDetails = async (location: Location) => {
   try {
+    console.log("Updating location with images:", location.images);
+    
+    // Patikrinti, ar nuotraukų masyvas yra teisingas
+    const safeImages = Array.isArray(location.images) ? [...location.images] : [];
+    
     const { error } = await supabase
       .from('locations')
       .update({
@@ -380,16 +385,21 @@ export const updateLocationDetails = async (location: Location) => {
         description: location.description,
         latitude: location.latitude,
         longitude: location.longitude,
-        categories: Array.isArray(location.categories) ? location.categories : [],
+        categories: Array.isArray(location.categories) ? [...location.categories] : [],
         is_public: location.is_public,
         is_paid: location.is_paid,
-        images: location.images,
-        main_image_index: location.main_image_index,
-        updated_at: new Date().toISOString()
+        images: safeImages, // Įsitikinkite, kad nuotraukų masyvas yra teisingas
+        main_image_index: location.main_image_index
+        // Pašalinome updated_at, nes Supabase gali tvarkyti atnaujinimo laiką automatiškai
       })
       .eq('id', location.id);
       
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating location:", error);
+      throw error;
+    }
+    
+    console.log("Location updated successfully with images:", safeImages);
     
     return true;
   } catch (error) {

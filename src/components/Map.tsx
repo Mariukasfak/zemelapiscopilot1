@@ -16,7 +16,7 @@ import MapControls from './MapControls';
 import LocationDetails from './LocationDetails';
 import EditLocationModal from './EditLocationModal';
 import Search from './Search';
-
+import { updateLocationDetails } from '../services/locationService';
 // Context
 import { useMap as useMapContext } from '../context/MapContext';
 import { useAuth } from '../context/AuthContext';
@@ -493,8 +493,8 @@ const Map: React.FC = () => {
   }, [userRole]);
 
   // Handle edit location
-  const handleEditLocation = useCallback((location: Location) => {
-    setEditingLocation(location);
+  const handleEditLocation = useCallback((updatedLocation: Location) => {
+    setEditingLocation(updatedLocation);
     setShowEditModal(true);
     setLocationContextMenu(null);
   }, []);

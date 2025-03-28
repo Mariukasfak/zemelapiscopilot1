@@ -63,7 +63,10 @@ const SimpleCropUploader: React.FC<SimpleCropUploaderProps> = ({ onImageUploaded
           contentType: file.type || 'image/jpeg'
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase upload error:", error);
+        throw error;
+      }
       
       // Gauname viešą URL
       const { data: urlData } = supabase.storage

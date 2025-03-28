@@ -91,7 +91,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
     e.preventDefault();
     
     // Užtikriname, kad images yra saugus masyvas
-    const safeImages = [...images];
+    const safeImages = Array.isArray(images) ? [...images] : [];
     
     console.log("Submitting images:", safeImages);
     
@@ -110,7 +110,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
         categories,
         is_public: isPublic,
         is_paid: isPaid,
-        images: safeImages,
+        images: safeImages, // Įsitikinkite, kad images reikšmė yra masyvas
         main_image_index: mainImageIndex < 0 || mainImageIndex >= safeImages.length ? 0 : mainImageIndex
       });
       
@@ -155,7 +155,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
     console.log("Gauta nuotrauka:", imageUrl);
     
     setImages(prevImages => {
-      const newImages = [...prevImages, imageUrl];
+      const newImages = Array.isArray(prevImages) ? [...prevImages, imageUrl] : [imageUrl];
       console.log("Images state updated:", newImages);
       return newImages;
     });
