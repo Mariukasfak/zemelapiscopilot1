@@ -93,7 +93,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
     // Užtikriname, kad images yra saugus masyvas
     const safeImages = Array.isArray(images) ? [...images] : [];
     
-    console.log("Submitting images:", safeImages);
+    console.log("handleSubmit: Submitting with images:", safeImages);
     
     if (!name || !latitude || !longitude) {
       alert('Prašome užpildyti visus privalomus laukus');
@@ -101,7 +101,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
     }
     
     try {
-      onSave({
+      const updatedLocation: Location = {
         ...location,
         name,
         description,
@@ -110,9 +110,12 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
         categories,
         is_public: isPublic,
         is_paid: isPaid,
-        images: safeImages, // Įsitikinkite, kad images reikšmė yra masyvas
-        main_image_index: mainImageIndex < 0 || mainImageIndex >= safeImages.length ? 0 : mainImageIndex
-      });
+        images: safeImages,
+        main_image_index: mainImageIndex
+      };
+      
+      console.log("Sending updated location:", updatedLocation);
+      onSave(updatedLocation);
       
       onClose();
     } catch (error) {
@@ -154,8 +157,10 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
   const handleImageUploaded = useCallback((imageUrl: string) => {
     console.log("Gauta nuotrauka:", imageUrl);
     
+    // Naudojame funkcinę formą setState funkcijai
     setImages(prevImages => {
-      const newImages = Array.isArray(prevImages) ? [...prevImages, imageUrl] : [imageUrl];
+      // Sukuriame naują masyvą ir įtraukiame naują nuotrauką
+      const newImages = [...(Array.isArray(prevImages) ? prevImages : []), imageUrl];
       console.log("Images state updated:", newImages);
       return newImages;
     });
@@ -165,7 +170,7 @@ const EditLocationModal: React.FC<EditLocationModalProps> = ({
     // Priverstinai atnaujiname UI po trumpo delsimo
     setTimeout(() => {
       forceUpdate();
-    }, 50);
+    }, 100);
   }, [forceUpdate]);
   
   // Handle removing image

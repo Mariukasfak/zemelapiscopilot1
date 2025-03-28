@@ -373,35 +373,43 @@ export const addLocation = async (locationData: any, userRole: UserRole) => {
  */
 export const updateLocationDetails = async (location: Location) => {
   try {
-    console.log("Updating location with images:", location.images);
+    console.log("Updating location with ID:", location.id);
+    console.log("Images before update:", location.images);
     
     // Patikrinti, ar nuotraukų masyvas yra teisingas
     const safeImages = Array.isArray(location.images) ? [...location.images] : [];
     
-    const { error } = await supabase
+    // Dėl debugging tikslų - įsitikiname, kad siunčiame teisingus duomenis
+    const updateData = {
+      name: location.name,
+      description: location.description,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      categories: Array.isArray(location.categories) ? [...location.categories] : [],
+      is_public: location.is_public,
+      is_paid: location.is_paid,
+      images: safeImages,
+      main_image_index: location.main_image_index || 0,
+      updated_at: new Date().toISOString() // Pridedame updated_at lauką
+    };
+    
+    console.log("Sending update data:", updateData);
+    
+    const { data, error } = await supabase
       .from('locations')
-      .update({
-        name: location.name,
-        description: location.description,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        categories: Array.isArray(location.categories) ? [...location.categories] : [],
-        is_public: location.is_public,
-        is_paid: location.is_paid,
-        images: safeImages, // Įsitikinkite, kad nuotraukų masyvas yra teisingas
-        main_image_index: location.main_image_index
-        // Pašalinome updated_at, nes Supabase gali tvarkyti atnaujinimo laiką automatiškai
-      })
-      .eq('id', location.id);
+      .update(updateData)
+      .eq('id', location.id)
+      .select();
       
     if (error) {
       console.error("Error updating location:", error);
       throw error;
     }
     
-    console.log("Location updated successfully with images:", safeImages);
+    console.log("Location updated successfully:", data);
+    console.log("Images after update:", safeImages);
     
-    return true;
+    return data || true;
   } catch (error) {
     console.error('Error updating location:', error);
     throw error;
