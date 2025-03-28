@@ -1,0 +1,40 @@
+# Dublikuoti nuotraukų įkėlimo komponentai (paliekame tik OneStepImageUploader.tsx)
+src/components/SimpleCropUploader.tsx
+src/components/SmartImageUploader.tsx
+src/components/ImageUpload.tsx
+src/components/AdvancedImageCropper.tsx
+
+# JavaScript failai TypeScript projekte
+src/components/LoadingSpinner.js
+src/components/LoadingSpinner.css
+
+# Didelį ir/ar statinį turinį turintys failai
+public/**/*
+src/assets/**/*
+
+# Migracijų failai (jie svarbūs tik duomenų bazei)
+supabase/migrations/*
+
+# Build ir konfigūracijos failai
+dist/**/*
+build/**/*
+.vite/**/*
+.supabase/**/*
+node_modules/**/*
+coverage/**/*
+
+# Lokinimo ir laikini failai
+*.log
+*.tmp
+*.temp
+
+# Trečiųjų šalių tipų aprašymai
+src/types/third-party/**/*
+
+# Weather serviso kopijos/dublikatai (paliekame pagrindinį)
+src/services/weatherService.ts
+
+# Markdown dokumentacija - jei reikia kodu dirbti, gali būti pridėta
+README.md
+LICENSE.md
+CONTRIBUTING.md

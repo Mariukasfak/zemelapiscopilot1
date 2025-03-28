@@ -1,55 +1,65 @@
-# Logs
-logs
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build
+dist
+build
+.vite
+
+# Supabase
+.supabase
+
+# Testing
+coverage
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE
+.vscode
+.idea
+
+# Temporary files
+*.tmp
+*.temp
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Large media files
+*.mp4
+*.webm
+*.mov
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.svg
+*.ico
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Cache
+.cache
+.npm
+.eslintcache
 
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Debug logs
+debug.log
+.pnpm-debug.log
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Local history
+.history
+.localhistory
 
-# testing
-/coverage
-
-# production
-/build
-
-# misc
-.DS_Store
-.env
-.env.local
+# Optional: development environment specifics
 .env.development.local
 .env.test.local
 .env.production.local
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDE specific files
-.idea
-.vscode
-*.sublime-project
-*.sublime-workspace
