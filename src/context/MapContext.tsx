@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { MapLayer, Location, LocationCategory } from '../types';
+import { MapLayer, Location } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
-import { fetchLocations, generateMockLocations } from '../services/locationService';
+import { generateMockLocations } from '../services/locationService';
 
 interface MapContextType {
   layers: MapLayer[];
