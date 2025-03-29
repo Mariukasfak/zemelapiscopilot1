@@ -2,22 +2,36 @@ import { Location, MapLayer } from '../types';
 import { Icon, DivIcon } from 'leaflet';
 
 // Create custom icon for location based on category
-export const createCategoryIcon = (category: string, color: string, isAd = false) => {
-  // Create a custom HTML icon
+export const createCategoryIcon = (category: string, color: string) => {
+  // Nustatome skirtingas spalvas pagal kategoriją
+  let bgColor;
+  switch (category) {
+    case 'fishing': bgColor = '#4682B4'; break;
+    case 'swimming': bgColor = '#6CA6CD'; break;
+    case 'camping': bgColor = '#8B4513'; break;
+    case 'campsite': bgColor = '#8B4513'; break;
+    case 'bonfire': bgColor = '#FF8C00'; break;
+    case 'picnic': bgColor = '#7FFF00'; break;
+    case 'playground': bgColor = '#FF69B4'; break;
+    case 'extreme': bgColor = '#9932CC'; break;
+    case 'ad': bgColor = '#a855f7'; break;
+    default: bgColor = color ? `#${color}` : '#697b61';
+  }
+
+  // Sukuriame HTML ikoną
   const iconHtml = `
-    <div class="map-pin-container" style="position: relative; width: 30px; height: 40px;">
-      <div class="map-pin-icon ${isAd ? 'bg-purple-500 animate-pulse' : `bg-${color}-500`}" style="position: absolute; top: 0; left: 0; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+    <div class="map-pin-container">
+      <div class="map-pin-icon" style="width: 30px; height: 30px; border-radius: 50%; background-color: ${bgColor}; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 2px solid white;">
         ${getCategoryIconSvg(category)}
       </div>
-      <div class="map-pin-pointer" style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 10px solid ${isAd ? '#a855f7' : `var(--tw-bg-opacity-${color}-500)`};"></div>
     </div>
   `;
 
   return new DivIcon({
     html: iconHtml,
     className: '',
-    iconSize: [30, 40],
-    iconAnchor: [15, 40]
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
   });
 };
 
@@ -47,7 +61,7 @@ export const getLocationIcon = (location: Location, layers: MapLayer[]) => {
   
   // Check if it's an ad first
   if (categories.includes('ad')) {
-    return createCategoryIcon('ad', 'purple', true);
+    return createCategoryIcon('ad', 'purple');
   }
   
   // Find the first active category

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Fish, Waves, Tent, Home, DollarSign, Lock, Unlock, MapPin, Flame, ToyBrick as Toy, Utensils, Truck, MountainSnow, User, Shield, ShieldCheck, ChevronLeft, ChevronRight, Users, Search, Megaphone, Filter, Layers, LogOut } from 'lucide-react';
+import { Fish, Waves, Tent, Home, DollarSign, Lock, Unlock, MapPin, Flame, ToyBrick as Toy, 
+         Utensils, Truck, MountainSnow, User, Shield, ShieldCheck, ChevronLeft, ChevronRight, 
+         Users, Search, Megaphone, LogOut, Thermometer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useMap } from '../context/MapContext';
 import { supabase } from '../lib/supabase';
@@ -11,7 +13,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed: externalCollapsed }) => {
   const { isAuthenticated, userRole, login, logout, user } = useAuth();
-  const { layers, toggleLayer, toggleAllLayers, handleAddLocation } = useMap();
+  const { layers, toggleLayer, toggleAllLayers, handleAddLocation, locations, handleLocationClick } = useMap();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showUserManagement, setShowUserManagement] = useState(false);
@@ -192,18 +194,13 @@ const toggleCategoryLayers = (categoryKey: string, active: boolean) => {
   };
 
   // Handle user update
-// src/components/Sidebar.tsx - patobulinta handleUpdateUser funkcija
-
 const handleUpdateUser = async () => {
   if (!selectedUser) return;
   
   try {
     console.log(`Updating user ${selectedUser.id}, changing role to: ${selectedRole}`);
     
-    // Išsaugoti pradinę rolę, jei prireiktų grįžti
-    const originalRole = selectedUser.role;
-    
-    // Bandymas #1: Tiesioginis atnaujinimas
+    // Trying to update user role
     try {
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
@@ -216,7 +213,7 @@ const handleUpdateUser = async () => {
       
       console.log(`Found role: ${roleData.name} with ID ${roleData.id}`);
       
-      // Naudojame tiesiogiai SQL užklausą vietoj ORM sluoksnio
+      // Using direct SQL query instead of ORM layer
       const { error: updateError } = await supabase.rpc('direct_user_role_update', {
         p_user_id: selectedUser.id,
         p_role_id: roleData.id
@@ -228,7 +225,7 @@ const handleUpdateUser = async () => {
     } catch (err) {
       console.error('Method #1 failed:', err);
       
-      // Bandymas #2: Tradicinis atnaujinimas su papildomu tikrinimu
+      // Alternative update method
       try {
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
@@ -489,6 +486,57 @@ const handleUpdateUser = async () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          
+          {/* Svarbi Vartotojui sekcija */}
+          {isAuthenticated && (
+            <div className="p-4 border-b">
+              <h2 className="font-semibold mb-3">Svarbi Vartotojui</h2>
+              
+              {locations.slice(0, 3).map((location) => (
+                <div key={location.id} 
+                     className="mb-3 bg-[var(--color-nature-cream)] rounded-lg shadow-sm overflow-hidden cursor-pointer"
+                     onClick={() => handleLocationClick(location)}>
+                  <div className="flex">
+                    <div className="w-1/3">
+                      {location.images && location.images.length > 0 ? (
+                        <img 
+                          src={location.images[location.main_image_index || 0]} 
+                          alt={location.name}
+                          className="w-full h-full object-cover"
+                          style={{ height: '90px' }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <MapPin size={24} className="text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="w-2/3 p-2">
+                      <div className="font-medium text-[var(--color-nature-green)]">{location.name}</div>
+                      <div className="text-xs text-gray-600 mt-1">Vandens kokybė: gera</div>
+                      <div className="text-xs text-gray-600">
+                        <span className="mr-3">
+                          <Thermometer size={12} className="inline mr-1" />
+                          {location.weather_data?.temp ? `${location.weather_data.temp}°C` : "N/A"}
+                        </span>
+                        <span>
+                          <MapPin size={12} className="inline mr-1" />
+                          2 km
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {locations.length === 0 && (
+                <div className="text-gray-500 text-sm">
+                  Nėra išsaugotų vietų
+                </div>
+              )}
             </div>
           )}
           

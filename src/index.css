@@ -1,42 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --color-nature-green: #697b61;
+  --color-nature-light-green: #8a9a7d;
+  --color-nature-cream: #f5f5e9;
+  --color-water-blue: #4682B4;
+  --color-wood-brown: #8B4513;
+  --color-sand: #f4e9d7;
+}
+
 /* Pulsavimo efektas dabartinei vietos žymei */
 .pulse-dot {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: #3b82f6;
-  border: 3px solid white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.7), 0 0 10px rgba(0,0,0,0.5);
+  background-color: var(--color-nature-green);
+  border: 2px solid white;
+  box-shadow: 0 0 0 rgba(105, 123, 97, 0.4);
   position: relative;
   animation: pulse 2s infinite;
   z-index: 1000 !important;
 }
   
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
-    }
-    70% {
-      box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-    }
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(105, 123, 97, 0.4);
   }
+  70% {
+    box-shadow: 0 0 0 10px rgba(105, 123, 97, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(105, 123, 97, 0);
+  }
+}
   
-  /* Paslėpti Leaflet atributą mobilioje versijoje */
-  @media (max-width: 768px) {
-    .leaflet-container .leaflet-control-attribution {
-      max-width: 70%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+/* Paslėpti Leaflet atributą mobilioje versijoje */
+@media (max-width: 768px) {
+  .leaflet-container .leaflet-control-attribution {
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+}
 
-  /* Fiksuoto dydžio aukštis mobiliuose įrenginiuose */
+/* Fiksuoto dydžio aukštis mobiliuose įrenginiuose */
 @media (max-width: 768px) {
   body, html, #root {
     height: 100%;
@@ -244,27 +254,60 @@
 .compact-popup,
 .enhanced-popup,
 .original-popup {
-  /* Override with default styles */
+  /* These styles are here for overriding purposes */
+  background-color: transparent;
 }
 
 /* Modernaus popup stiliai */
 .leaflet-popup-modern .leaflet-popup-content-wrapper {
+  background-color: var(--color-nature-cream);
+  color: var(--color-nature-green);
+  border-radius: 12px;
   padding: 0;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .leaflet-popup-modern .leaflet-popup-content {
   margin: 0;
-  width: 200px !important; /* Sumažinta iš 280px į 200px */
+  max-width: 250px;
 }
 
-.leaflet-popup-modern .leaflet-popup-close-button {
-  top: 5px;
-  right: 5px;
-  color: white;
-  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+.leaflet-popup-modern .leaflet-popup-tip {
+  background-color: var(--color-nature-cream);
+}
+
+.location-card-image {
+  height: 140px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.location-card-content {
+  padding: 12px;
+}
+
+.location-card-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.location-card-stats {
+  display: flex;
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.location-card-stat {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.location-card-stat svg {
+  margin-right: 4px;
 }
 
 .animate-pulse {

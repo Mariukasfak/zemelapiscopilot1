@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, Edit, Trash, Check, MessageSquare, ChevronLeft, ChevronRight, Maximize, Ban, Thermometer } from 'lucide-react';
+import { X, Star, Edit, Trash, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
 import { Location, UserRole, LocationComment, LocationRating } from '../types';
 import { supabase } from '../lib/supabase';
 import WeatherComponent from './WeatherComponent';
@@ -433,7 +433,7 @@ const avgRating = ratings.length > 0
         
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'details' && (
-            <div>
+            <div className="bg-[var(--color-nature-cream)] rounded-lg p-4">
               {/* Location images */}
               {location.images && location.images.length > 0 && (
                 <div className="mb-4">
@@ -441,8 +441,9 @@ const avgRating = ratings.length > 0
                     <img 
                       src={location.images[currentImageIndex]} 
                       alt={`${location.name} - ${currentImageIndex + 1}`} 
-                      className="w-full h-64 object-cover rounded cursor-pointer"
-                      onClick={() => handleEnlargeImage(location.images[currentImageIndex])}
+                      className="w-full h-220 object-cover rounded-lg cursor-pointer"
+                      onClick={() => handleEnlargeImage(location.images?.[currentImageIndex] || '')}
+                      style={{ height: '220px' }}
                     />
                     
                     {location.images.length > 1 && (
@@ -465,52 +466,70 @@ const avgRating = ratings.length > 0
                         >
                           <ChevronRight size={20} />
                         </button>
-                        <button 
-                          className="absolute right-2 top-2 bg-black bg-opacity-50 text-white p-1 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEnlargeImage(location.images[currentImageIndex]);
-                          }}
-                        >
-                          <Maximize size={20} />
-                        </button>
                       </>
-                    )}
-                    
-                    {location.images.length > 1 && (
-                      <div className="flex justify-center mt-2 space-x-1">
-                        {location. images.map((_, index) => (
-                          <button 
-                            key={index}
-                            className={`w-2 h-2 rounded-full ${index === currentImageIndex ? 'bg-blue-500' : 'bg-gray-300'}`}
-                            onClick={() => setCurrentImageIndex(index)}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Set as main image button */}
-                    {(userRole === 'admin' || userRole === 'moderator' || user?.id === location.created_by) && (
-                      <button
-                        className="absolute left-2 top-2 bg-blue-500 text-white text-xs py-1 px-2 rounded"
-                        onClick={handleSetMainImage}
-                      >
-                        Nustatyti kaip pagrindinę
-                      </button>
                     )}
                   </div>
                 </div>
               )}
               
+              {location.images && location.images.length > 0 && 
+ (userRole === 'admin' || userRole === 'moderator' || user?.id === location.created_by) && (
+  <div className="mt-2 mb-3 text-right">
+    <button
+      onClick={handleSetMainImage}
+      className="text-xs bg-[var(--color-nature-green)] text-white px-2 py-1 rounded-md"
+    >
+      Nustatyti kaip pagrindinę nuotrauką
+    </button>
+  </div>
+)}
+
+              
+              {/* Pavadinimas */}
+              <h2 className="text-2xl font-bold text-[var(--color-nature-green)] mb-2">{location.name}</h2>
+              
+              {/* Koordinatės */}
+              <div className="text-sm text-gray-600 mb-3">
+                {location.latitude.toFixed(4)}° N, {location.longitude.toFixed(4)}° E
+              </div>
+              
+              {/* Informacijos kortelės */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Vandens kokybė:</div>
+                  <div className="font-medium">Gera</div>
+                </div>
+                
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Temperatūra:</div>
+                  <div className="font-medium">
+                    {location.weather_data ? `${location.weather_data.temp}°C` : "N/A"}
+                  </div>
+                </div>
+                
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Atstumas:</div>
+                  <div className="font-medium">2 km</div>
+                </div>
+                
+                <div className="bg-white p-3 rounded-lg shadow-sm">
+                  <div className="text-sm text-gray-600">Įvertinimas:</div>
+                  <div className="font-medium flex items-center">
+                    <Star className="text-yellow-500 mr-1" size={16} />
+                    {location.rating ? location.rating.toFixed(1) : "0"}/5
+                  </div>
+                </div>
+              </div>
+              
               {/* Description */}
               <div className="mb-4">
-                <h3 className="font-medium mb-1">Aprašymas</h3>
+                <h3 className="font-medium mb-1 text-[var(--color-nature-green)]">Aprašymas</h3>
                 <p className="text-gray-700">{location.description || 'Aprašymas nepateiktas'}</p>
               </div>
               
               {/* Categories */}
               <div className="mb-4">
-                <h3 className="font-medium mb-1">Kategorijos</h3>
+                <h3 className="font-medium mb-1 text-[var(--color-nature-green)]">Kategorijos</h3>
                 <div className="flex flex-wrap gap-1">
                   {location.categories.map(category => {
                     const categoryLabels: Record<string, string> = {
@@ -534,7 +553,7 @@ const avgRating = ratings.length > 0
                       <span 
                         key={category}
                         className={`text-xs px-2 py-1 rounded-full ${
-                          category === 'ad' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          category === 'ad' ? 'bg-purple-100 text-purple-800' : 'bg-[var(--color-nature-light-green)] text-white'
                         }`}
                       >
                         {categoryLabels[category] || category}
@@ -544,25 +563,13 @@ const avgRating = ratings.length > 0
                 </div>
               </div>
               
-              {/* Status */}
-              <div className="mb-4">
-                <h3 className="font-medium mb-1">Statusas</h3>
-                <div className="flex space-x-4">
-                  <span className={`text-sm ${location.is_paid ? 'text-amber-500' : 'text-green-500'}`}>
-                    {location.is_paid ? 'Mokama vieta' : 'Nemokama vieta'}
-                  </span>
-                  <span className={`text-sm ${location.is_public ? 'text-green-500' : 'text-red-500'}`}>
-                    {location.is_public ? 'Vieša teritorija' : 'Privati teritorija'}
-                  </span>
-                </div>
-              </div>
-              
+              {/* Weather component */}
               <WeatherComponent 
-  latitude={location.latitude}
-  longitude={location.longitude}
-  locationName={location.name}
-/>
-              
+                latitude={location.latitude}
+                longitude={location.longitude}
+                locationName={location.name}
+              />
+
               {/* Admin/Moderator actions */}
               {(userRole === 'admin' || userRole === 'moderator') && !location.is_approved && (
                 <div className="mt-4 p-3 bg-yellow-50 rounded-md">
@@ -575,7 +582,6 @@ const avgRating = ratings.length > 0
                     disabled={isApproving}
                     className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md flex items-center text-sm"
                   >
-                    <Check size={16} className="mr-1" />
                     {isApproving ? 'Tvirtinama...' : 'Patvirtinti vietą'}
                   </button>
                 </div>

@@ -19,6 +19,7 @@ interface MapContextType {
   showAddLocationModal: boolean;
   setShowAddLocationModal: (show: boolean) => void;
   handleAddLocation: (coords?: [number, number]) => void;
+  handleLocationClick: (location: Location) => void;
 }
 
 const MapContext = createContext<MapContextType | undefined>(undefined);
@@ -278,6 +279,15 @@ const toggleAllLayers = (categoryLayers: string[], active: boolean) => {
     setContextMenuPosition(null);
   };
 
+  // Implement the handleLocationClick function
+  const handleLocationClick = (location: Location) => {
+    console.log('Location clicked:', location.name);
+    // Dispatch a custom event that can be listened to by other components
+    document.dispatchEvent(new CustomEvent('openLocationDetails', {
+      detail: { id: location.id }
+    }));
+  };
+
   return (
     <MapContext.Provider
       value={{
@@ -294,7 +304,8 @@ const toggleAllLayers = (categoryLayers: string[], active: boolean) => {
         closeContextMenu,
         showAddLocationModal,
         setShowAddLocationModal,
-        handleAddLocation
+        handleAddLocation,
+        handleLocationClick
       }}
     >
       {children}
