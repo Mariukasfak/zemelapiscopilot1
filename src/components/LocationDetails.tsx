@@ -553,7 +553,7 @@ const avgRating = ratings.length > 0
               <div className="mb-4">
                 <h3 className="font-medium mb-1 text-[var(--color-nature-green)]">Kategorijos</h3>
                 <div className="flex flex-wrap gap-1">
-                  {location.categories.map(category => {
+                  {location.categories.map((category: string) => {
                     const categoryLabels: Record<string, string> = {
                       'fishing': 'Žvejyba',
                       'swimming': 'Maudymasis',
@@ -719,7 +719,7 @@ const avgRating = ratings.length > 0
                       
                       {comment.images && comment.images.length > 0 && (
                         <div className="mt-2 grid grid-cols-2 gap-2">
-                          {comment.images.map((url, index) => (
+                          {comment.images.map((url: string, index: number) => (
                             <img 
                               key={index}
                               src={url} 
