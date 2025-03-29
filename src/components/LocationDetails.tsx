@@ -3,6 +3,7 @@ import { X, Star, Edit, Trash, ChevronLeft, ChevronRight, Ban } from 'lucide-rea
 import { Location, UserRole, LocationComment, LocationRating } from '../types';
 import { supabase } from '../lib/supabase';
 import WeatherComponent from './WeatherComponent';
+import { calculateDistance } from '../utils/MapUtils';
 
 interface LocationDetailsProps {
   location: Location;
@@ -35,6 +36,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editedCommentContent, setEditedCommentContent] = useState('');
   const [editingRating, setEditingRating] = useState<string | null>(null);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
 
   // Fetch user session
   useEffect(() => {
@@ -370,6 +372,18 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     }
   };
 
+  // Track user position
+  useEffect(() => {
+    const handleUserPositionChanged = (event: any) => {
+      if (event.detail && event.detail.position) {
+        setUserPosition(event.detail.position);
+      }
+    };
+
+    document.addEventListener('userPositionChanged', handleUserPositionChanged);
+    return () => document.removeEventListener('userPositionChanged', handleUserPositionChanged);
+  }, []);
+
   if (!isOpen) return null;
 
   // Calculate average rating
@@ -495,21 +509,29 @@ const avgRating = ratings.length > 0
               
               {/* Informacijos kortelės */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white p-3 rounded-lg shadow-sm">
-                  <div className="text-sm text-gray-600">Vandens kokybė:</div>
-                  <div className="font-medium">Gera</div>
-                </div>
-                
-                <div className="bg-white p-3 rounded-lg shadow-sm">
-                  <div className="text-sm text-gray-600">Temperatūra:</div>
-                  <div className="font-medium">
-                    {location.weather_data ? `${location.weather_data.temp}°C` : "N/A"}
+                {location.categories && location.categories.includes('swimming') && (
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-600">Vandens kokybė:</div>
+                    <div className="font-medium">Gera</div>
                   </div>
-                </div>
+                )}
+                
+                {location.categories && location.categories.includes('swimming') && (
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <div className="text-sm text-gray-600">Temperatūra:</div>
+                    <div className="font-medium">
+                      {location.weather_data ? `${location.weather_data.temp}°C` : "N/A"}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="bg-white p-3 rounded-lg shadow-sm">
                   <div className="text-sm text-gray-600">Atstumas:</div>
-                  <div className="font-medium">2 km</div>
+                  <div className="font-medium">
+                    {userPosition ? 
+                      `${Math.round(calculateDistance(userPosition[0], userPosition[1], location.latitude, location.longitude))} km` : 
+                      'Nežinomas atstumas'}
+                  </div>
                 </div>
                 
                 <div className="bg-white p-3 rounded-lg shadow-sm">

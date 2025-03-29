@@ -56,14 +56,14 @@ const MapMarkerManager: React.FC<MapMarkerManagerProps> = ({
         ${temp}
       </div>`;
       
-    // Atstumas - fiksuotas kol kas
+    // Atstumas - dinamiškas
     popupContent += `
       <div class="location-card-stat">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
           <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        2 km
+        <span class="distance-placeholder">Skaičiuojama...</span>
       </div>`;
     
     popupContent += '</div>'; // Uždarome stats
@@ -77,6 +77,40 @@ const MapMarkerManager: React.FC<MapMarkerManagerProps> = ({
       </button>`;
       
     popupContent += '</div>'; // Uždarome content
+    popupContent += '</div>'; // Uždarome location-card
+    
+    // Add distance calculation script
+    popupContent += `
+      <script>
+        document.addEventListener('userPositionChanged', function(e) {
+          if (e.detail && e.detail.position) {
+            const userLat = e.detail.position[0];
+            const userLng = e.detail.position[1]; 
+            const locLat = ${location.latitude};
+            const locLng = ${location.longitude};
+            
+            // Atstumo skaičiavimo funkcija
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+              const R = 6371; // Žemės spindulys km
+              const dLat = (lat2 - lat1) * Math.PI / 180;
+              const dLon = (lon2 - lon1) * Math.PI / 180;
+              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+              return Math.round(R * c);
+            }
+            
+            const distance = calculateDistance(userLat, userLng, locLat, locLng);
+            const elements = document.querySelectorAll('.distance-placeholder');
+            elements.forEach(el => {
+              el.textContent = distance + ' km';
+            });
+          }
+        });
+      </script>
+    `;
+    
     popupContent += '</div>'; // Uždarome location-card
     
     return popupContent;
